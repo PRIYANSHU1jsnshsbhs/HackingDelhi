@@ -465,6 +465,34 @@ def get_mock_analytics():
         "by_income": {"0-50k": 500000, "50k-100k": 450000, "100k-200k": 350000, "200k+": 200000}
     }
 
+def get_mock_state_analytics():
+    """Generate mock state-wise data for Indian states"""
+    import random
+    random.seed(42)
+    
+    states = [
+        "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh",
+        "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand",
+        "Karnataka", "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur",
+        "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Punjab",
+        "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", "Tripura",
+        "Uttar Pradesh", "Uttarakhand", "West Bengal", "Delhi", "Jammu and Kashmir"
+    ]
+    
+    state_data = {}
+    for state in states:
+        # Generate realistic population ranges based on state size
+        base_pop = random.randint(50000, 500000)
+        state_data[state] = {
+            "total_population": base_pop,
+            "normal": int(base_pop * random.uniform(0.75, 0.85)),
+            "review": int(base_pop * random.uniform(0.10, 0.18)),
+            "priority": int(base_pop * random.uniform(0.02, 0.07)),
+            "avg_income": random.randint(40000, 150000)
+        }
+    
+    return state_data
+
 def get_mock_audit_logs():
     return [
         {
