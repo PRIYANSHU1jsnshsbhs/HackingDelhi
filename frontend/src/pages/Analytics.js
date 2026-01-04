@@ -103,6 +103,105 @@ function Analytics() {
         )}
       </Card>
 
+      {/* Interactive India Map Section */}
+      <Card className="p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
+          <h2 className="text-xl font-semibold text-gray-900">State-Wise Population Heatmap</h2>
+          <div className="flex gap-2 mt-3 sm:mt-0">
+            <button
+              onClick={() => setMapMetric('total_population')}
+              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                mapMetric === 'total_population'
+                  ? 'bg-orange-500 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Population
+            </button>
+            <button
+              onClick={() => setMapMetric('review')}
+              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                mapMetric === 'review'
+                  ? 'bg-orange-500 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Pending Review
+            </button>
+            <button
+              onClick={() => setMapMetric('priority')}
+              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                mapMetric === 'priority'
+                  ? 'bg-orange-500 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Priority Cases
+            </button>
+            <button
+              onClick={() => setMapMetric('avg_income')}
+              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                mapMetric === 'avg_income'
+                  ? 'bg-orange-500 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Avg Income
+            </button>
+          </div>
+        </div>
+
+        <div className="bg-gradient-to-br from-orange-50 to-yellow-50 rounded-lg p-6">
+          <InteractiveIndiaMap
+            metric={mapMetric}
+            onStateClick={(state, data) => {
+              setSelectedState({ name: state, data });
+            }}
+          />
+        </div>
+
+        {selectedState && (
+          <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <h3 className="font-semibold text-gray-900 mb-2">
+              Selected State: {selectedState.name}
+            </h3>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+              <div>
+                <p className="text-gray-600">Total Population</p>
+                <p className="font-bold text-blue-700">
+                  {selectedState.data.total_population.toLocaleString()}
+                </p>
+              </div>
+              <div>
+                <p className="text-gray-600">Under Review</p>
+                <p className="font-bold text-orange-600">
+                  {selectedState.data.review.toLocaleString()}
+                </p>
+              </div>
+              <div>
+                <p className="text-gray-600">Priority</p>
+                <p className="font-bold text-red-600">
+                  {selectedState.data.priority.toLocaleString()}
+                </p>
+              </div>
+              <div>
+                <p className="text-gray-600">Avg Income</p>
+                <p className="font-bold text-purple-600">
+                  ₹{selectedState.data.avg_income.toLocaleString()}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="mt-4 p-3 bg-yellow-50 border border-yellow-300 rounded-lg">
+          <p className="text-xs text-gray-700">
+            <strong>Interactive Map:</strong> Hover over states to see detailed statistics. Click on any state to view comprehensive data.
+            Color intensity represents the selected metric value.
+          </p>
+        </div>
+      </Card>
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card className="p-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">Population by Region</h2>
