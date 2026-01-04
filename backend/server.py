@@ -380,7 +380,13 @@ async def get_audit_signals(record_id: str, user: dict = Depends(get_current_use
 async def generate_mock_census_data():
     regions = ["North", "South", "East", "West", "Central"]
     districts = ["District A", "District B", "District C", "District D"]
-    states = ["Maharashtra", "Karnataka", "Tamil Nadu", "Gujarat", "Delhi"]
+    states = [
+        "Maharashtra", "Karnataka", "Tamil Nadu", "Gujarat", "Delhi",
+        "Uttar Pradesh", "West Bengal", "Rajasthan", "Madhya Pradesh", "Kerala",
+        "Andhra Pradesh", "Telangana", "Bihar", "Odisha", "Punjab",
+        "Haryana", "Assam", "Jharkhand", "Uttarakhand", "Himachal Pradesh",
+        "Chhattisgarh", "Goa", "Jammu and Kashmir", "Manipur", "Meghalaya"
+    ]
     castes = ["General", "OBC", "SC", "ST"]
     relations = ["head", "spouse", "son", "daughter", "parent"]
     names = ["Rajesh Kumar", "Priya Sharma", "Amit Patel", "Sneha Reddy", "Vikram Singh"]
