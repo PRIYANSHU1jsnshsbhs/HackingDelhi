@@ -237,9 +237,9 @@ function InteractiveIndiaMap({ metric = 'total_population', onStateClick }) {
   return (
     <div className="relative">
       <svg
-        viewBox="0 0 500 400"
+        viewBox="0 0 550 450"
         className="w-full h-auto"
-        style={{ maxHeight: '500px' }}
+        style={{ maxHeight: '550px' }}
       >
         {/* India Map States */}
         {Object.entries(INDIA_STATES).map(([stateName, stateInfo]) => (
