@@ -368,6 +368,7 @@ test_plan:
     - "Census Records API with Filtering"
     - "Review Workflow API"
     - "Analytics Summary API"
+    - "Interactive India Map Component"
     - "Policy Simulation API"
     - "Audit Logs API"
   stuck_tasks: []
