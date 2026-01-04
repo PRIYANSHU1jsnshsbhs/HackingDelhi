@@ -319,6 +319,18 @@ frontend:
         agent: "main"
         comment: "List view of audit entries with timestamps and details"
 
+  - task: "Interactive India Map Component"
+    implemented: true
+    working: NA
+    file: "frontend/src/components/InteractiveIndiaMap.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: NA
+        agent: "main"
+        comment: "Interactive SVG-based India map with 30 states/UTs. Features: hover tooltips showing detailed state statistics, orange-yellow heatmap gradient, clickable states, metric toggle (population/review/priority/income), state selection display"
+
   - task: "Role-Aware Navigation Sidebar"
     implemented: true
     working: NA
