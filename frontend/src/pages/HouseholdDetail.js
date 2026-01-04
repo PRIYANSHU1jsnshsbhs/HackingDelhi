@@ -4,7 +4,7 @@ import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { ArrowLeft, Users, AlertTriangle } from 'lucide-react';
 import axios from 'axios';
-import ForceGraph2D from 'react-force-graph-2d';
+import { ForceGraph2D } from 'react-force-graph';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
