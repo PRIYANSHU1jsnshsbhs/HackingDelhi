@@ -1,5 +1,19 @@
 # Governance Portal - Census Intelligence System
 
+<div align="center">
+
+## 🎥 Demo Video
+
+[![Governance Portal Demo](https://img.youtube.com/vi/YOUR_VIDEO_ID/maxresdefault.jpg)](https://www.youtube.com/watch?v=QCwCYHa5YCMcQfyt)
+
+**Click the image above to watch the full demo**
+
+*Search for: "H4D_HackingDelhi_PriyanshuBarik_CivicTech" on YouTube or replace `YOUR_VIDEO_ID` with your actual YouTube video ID*
+
+---
+
+</div>
+
 A comprehensive web application for managing census data with role-based access control, real-time analytics, policy simulation, and audit logging. Built for government and administrative use cases requiring secure data management and decision-making tools.
 
 ## 🌟 Features
