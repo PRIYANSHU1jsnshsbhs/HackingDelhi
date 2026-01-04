@@ -279,6 +279,19 @@ function InteractiveIndiaMap({ metric = 'total_population', onStateClick }) {
         })}
       </svg>
 
+      {/* Legend */}
+      <div className="mt-4 flex flex-wrap items-center justify-center gap-4 text-xs">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-3 rounded" style={{ background: 'linear-gradient(to right, #FFF3B0, #FFD166, #FFB84D, #FF8C42, #FF6B35)' }}></div>
+          <span className="text-gray-600">
+            {metric === 'total_population' && 'Low → High Population'}
+            {metric === 'review' && 'Low → High Review %'}
+            {metric === 'priority' && 'Low → High Priority %'}
+            {metric === 'avg_income' && 'Low → High Income'}
+          </span>
+        </div>
+      </div>
+
       {/* Hover Tooltip */}
       {hoveredState && stateData[hoveredState] && (
         <div
