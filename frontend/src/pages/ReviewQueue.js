@@ -16,7 +16,20 @@ function ReviewQueue() {
   const [filter, setFilter] = useState('all');
 
   useEffect(() => {
-    fetchRecords();
+    const loadRecords = async () => {
+      try {
+        const params = filter !== 'all' ? `?flag_status=${filter}` : '';
+        const response = await axios.get(`${BACKEND_URL}/api/census/records${params}`, {
+          withCredentials: true
+        });
+        setRecords(response.data);
+      } catch (error) {
+        toast.error('Failed to fetch records');
+      } finally {
+        setLoading(false);\n      }
+    };
+    
+    loadRecords();
   }, [filter]);
 
   const fetchRecords = async () => {
