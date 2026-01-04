@@ -184,7 +184,7 @@ backend:
     status_history:
       - working: NA
         agent: "main"
-        comment: "GET /api/analytics/summary with region, caste, income aggregations. Role restricted to state_analyst, policy_maker, district_admin"
+        comment: "GET /api/analytics/summary with region, caste, income aggregations. Role restricted to state_analyst, policy_maker, district_admin. Added GET /api/analytics/states for state-wise population, review status, and income data with heatmap support."
 
   - task: "Policy Simulation API"
     implemented: true
