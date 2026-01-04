@@ -73,10 +73,10 @@ class GovernancePortalTester:
             self.log_test("Census Records - Unauthorized Access", False, f"Exception: {str(e)}")
 
     def test_blockchain_placeholder(self):
-        """Test GET /api/integrity-status/{record_id} - Blockchain placeholder"""
+        """Test GET /api/integrity/status/{record_id} - Blockchain placeholder"""
         try:
             test_record_id = "REC000001"
-            response = self.session.get(f"{BACKEND_URL}/integrity-status/{test_record_id}")
+            response = self.session.get(f"{BACKEND_URL}/integrity/status/{test_record_id}")
             
             if response.status_code == 401:
                 self.log_test("Blockchain Integration Placeholder", True, 
