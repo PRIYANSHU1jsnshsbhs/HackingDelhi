@@ -1,10 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { ArrowLeft, Users, AlertTriangle } from 'lucide-react';
 import axios from 'axios';
-import { ForceGraph2D } from 'react-force-graph';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
