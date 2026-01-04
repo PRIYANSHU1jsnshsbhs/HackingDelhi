@@ -4,9 +4,11 @@
 
 ## 🎥 Demo Video
 
-https://github.com/user-attachments/assets/712115c8-ec9b-43b6-9489-9442bb5e1a15
+[![Governance Portal Demo](https://img.youtube.com/vi/OyFJBP29EnE/maxresdefault.jpg)](https://youtu.be/OyFJBP29EnE?si=5NPgz3wqakUUXgq1)
 
-*Demo showcasing all features of the Governance Portal*
+**Click the thumbnail above to watch the full demo video**
+
+*Showcasing authentication, dashboard, review queue, analytics, policy simulation & audit logging*
 
 ---
 
