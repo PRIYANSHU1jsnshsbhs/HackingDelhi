@@ -44,6 +44,7 @@
     "react": "^19.0.0",
     "react-day-picker": "8.10.1",
     "react-dom": "^19.0.0",
+    "react-force-graph": "^1.48.1",
     "react-graph-vis": "^1.0.7",
     "react-hook-form": "^7.56.2",
     "react-resizable-panels": "^3.0.1",
