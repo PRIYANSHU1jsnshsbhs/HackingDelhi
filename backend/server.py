@@ -98,6 +98,10 @@ class PolicySimulation(BaseModel):
     caste_filter: Optional[str] = None
     region_filter: Optional[str] = None
 
+@api_router.get("/")
+async def api_root():
+    return {"message": "Governance Portal API", "status": "operational"}
+
 @api_router.post("/auth/session")
 async def create_session(request: Request, response: Response):
     body = await request.json()
