@@ -4,11 +4,9 @@
 
 ## 🎥 Demo Video
 
-[![Governance Portal Demo](https://img.youtube.com/vi/YOUR_VIDEO_ID/maxresdefault.jpg)](https://www.youtube.com/watch?v=QCwCYHa5YCMcQfyt)
+https://github.com/user-attachments/assets/712115c8-ec9b-43b6-9489-9442bb5e1a15
 
-**Click the image above to watch the full demo**
-
-*Search for: "H4D_HackingDelhi_PriyanshuBarik_CivicTech" on YouTube or replace `YOUR_VIDEO_ID` with your actual YouTube video ID*
+*Demo showcasing all features of the Governance Portal*
 
 ---
 
