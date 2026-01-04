@@ -391,3 +391,22 @@ agent_communication:
       
       Note: Auth requires Emergent Auth session_id from OAuth flow.
       For RBAC testing, use PUT /api/auth/role to switch roles after login.
+  
+  - agent: "main"
+    message: |
+      FEATURE ADDED: Interactive India Map with State-wise Heatmaps
+      
+      Added to Analytics page:
+      - New backend endpoint: GET /api/analytics/states
+        Returns state-wise population, review counts, priority cases, and average income
+      - InteractiveIndiaMap component with 30 Indian states/UTs
+      - Features:
+        * Orange-yellow gradient heatmap (Indian government theme)
+        * Hover tooltips showing detailed state statistics
+        * Clickable states for detailed view
+        * Metric toggle buttons: Population, Pending Review, Priority Cases, Avg Income
+        * Color intensity based on selected metric
+        * Legend explaining color gradients
+      
+      Mock data includes all major Indian states with realistic population distributions.
+      The map integrates seamlessly with existing analytics and uses the same RBAC permissions.
