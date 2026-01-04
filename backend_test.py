@@ -10,7 +10,7 @@ import sys
 from datetime import datetime
 
 # Get backend URL from frontend .env file
-BACKEND_URL = "https://policy-insight-3.preview.emergentagent.com/api"
+BACKEND_URL = "https://polisim-app.preview.emergentagent.com/api"
 
 class GovernancePortalTester:
     def __init__(self):
