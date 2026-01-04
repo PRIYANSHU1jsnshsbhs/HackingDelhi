@@ -53,18 +53,88 @@ function HouseholdDetail() {
     );
   }
 
-  const graphData = {
-    nodes: household.graph.nodes.map(node => ({
-      id: node.id,
-      name: node.name,
-      val: 10,
-      color: node.relation === 'head' ? '#FF6B35' : '#4ECDC4'
-    })),
-    links: household.graph.edges.map(edge => ({
-      source: edge.source,
-      target: edge.target
-    }))
-  };
+  // Simple graph visualization using SVG
+  const GraphVisualization = useCallback(() => {
+    const nodes = household.graph.nodes;
+    const edges = household.graph.edges;
+    
+    if (nodes.length === 0) {
+      return (
+        <div className="flex items-center justify-center h-full">
+          <p className="text-gray-500 text-sm">No relationship data available</p>
+        </div>
+      );
+    }
+
+    // Calculate positions in a circular layout
+    const centerX = 200;
+    const centerY = 180;
+    const radius = 120;
+    
+    const nodePositions = nodes.map((node, index) => {
+      const angle = (index * 2 * Math.PI) / nodes.length - Math.PI / 2;
+      return {
+        ...node,
+        x: centerX + radius * Math.cos(angle),
+        y: centerY + radius * Math.sin(angle)
+      };
+    });
+
+    return (
+      <svg width="100%" height="100%" viewBox="0 0 400 360" className="bg-gray-50 rounded-lg">
+        {/* Draw edges */}
+        {edges.map((edge, index) => {
+          const sourceNode = nodePositions.find(n => n.id === edge.source);
+          const targetNode = nodePositions.find(n => n.id === edge.target);
+          if (!sourceNode || !targetNode) return null;
+          return (
+            <line
+              key={index}
+              x1={sourceNode.x}
+              y1={sourceNode.y}
+              x2={targetNode.x}
+              y2={targetNode.y}
+              stroke="#cbd5e1"
+              strokeWidth="2"
+            />
+          );
+        })}
+        
+        {/* Draw nodes */}
+        {nodePositions.map((node, index) => (
+          <g key={node.id}>
+            <circle
+              cx={node.x}
+              cy={node.y}
+              r={node.relation === 'head' ? 25 : 20}
+              fill={node.relation === 'head' ? '#FF6B35' : '#4ECDC4'}
+              stroke="white"
+              strokeWidth="3"
+            />
+            <text
+              x={node.x}
+              y={node.y + 40}
+              textAnchor="middle"
+              fill="#1f2937"
+              fontSize="11"
+              fontWeight="500"
+            >
+              {node.name}
+            </text>
+            <text
+              x={node.x}
+              y={node.y + 52}
+              textAnchor="middle"
+              fill="#6b7280"
+              fontSize="9"
+            >
+              ({node.relation})
+            </text>
+          </g>
+        ))}
+      </svg>
+    );
+  }, [household.graph]);
 
   return (
     <div data-testid="household-detail" className="space-y-6">
@@ -128,32 +198,8 @@ function HouseholdDetail() {
 
         <Card className="p-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">Relationship Graph</h2>
-          <div className="bg-gray-50 rounded-lg" style={{ height: '400px' }}>
-            {graphData.nodes.length > 0 ? (
-              <ForceGraph2D
-                graphData={graphData}
-                nodeLabel="name"
-                nodeAutoColorBy="color"
-                linkColor={() => '#cbd5e1'}
-                nodeCanvasObject={(node, ctx, globalScale) => {
-                  const label = node.name;
-                  const fontSize = 12 / globalScale;
-                  ctx.font = `${fontSize}px Sans-Serif`;
-                  ctx.textAlign = 'center';
-                  ctx.textBaseline = 'middle';
-                  ctx.fillStyle = node.color;
-                  ctx.beginPath();
-                  ctx.arc(node.x, node.y, 5, 0, 2 * Math.PI, false);
-                  ctx.fill();
-                  ctx.fillStyle = '#1f2937';
-                  ctx.fillText(label, node.x, node.y + 10);
-                }}
-              />
-            ) : (
-              <div className="flex items-center justify-center h-full">
-                <p className="text-gray-500 text-sm">No relationship data available</p>
-              </div>
-            )}
+          <div className="rounded-lg" style={{ height: '400px' }}>
+            <GraphVisualization />
           </div>
           <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
             <p className="text-xs text-yellow-800">
