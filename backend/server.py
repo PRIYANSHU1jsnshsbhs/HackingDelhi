@@ -24,6 +24,11 @@ api_router = APIRouter(prefix="/api")
 
 EMERGENT_AUTH_URL = "https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data"
 
+# Add your routes to the router instead of directly to app
+@api_router.get("/")
+async def root():
+    return {"message": "Governance Portal API", "status": "operational"}
+
 def get_session_token(request: Request) -> Optional[str]:
     token = request.cookies.get("session_token")
     if not token:
