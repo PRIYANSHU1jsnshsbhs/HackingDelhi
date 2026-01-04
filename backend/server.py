@@ -312,6 +312,48 @@ async def get_analytics_summary(user: dict = Depends(get_current_user)):
         "by_income": income_brackets
     }
 
+@api_router.get("/analytics/states")
+async def get_state_analytics(user: dict = Depends(get_current_user)):
+    if user["role"] not in ["state_analyst", "policy_maker", "district_admin"]:
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
+    
+    records = await db.census_records.find({}, {"_id": 0}).to_list(2000)
+    
+    if not records:
+        # Return mock state-wise data for all Indian states
+        return get_mock_state_analytics()
+    
+    state_data = {}
+    for record in records:
+        state = record["state"]
+        if state not in state_data:
+            state_data[state] = {
+                "total_population": 0,
+                "normal": 0,
+                "review": 0,
+                "priority": 0,
+                "avg_income": 0,
+                "income_sum": 0
+            }
+        
+        state_data[state]["total_population"] += 1
+        state_data[state]["income_sum"] += record["income"]
+        
+        flag_status = record.get("flag_status", "normal")
+        if flag_status in state_data[state]:
+            state_data[state][flag_status] += 1
+    
+    # Calculate average income for each state
+    for state in state_data:
+        if state_data[state]["total_population"] > 0:
+            state_data[state]["avg_income"] = round(
+                state_data[state]["income_sum"] / state_data[state]["total_population"]
+            )
+        del state_data[state]["income_sum"]
+    
+    return state_data
+
+
 @api_router.post("/policy/simulate")
 async def simulate_policy(
     simulation: PolicySimulation,
