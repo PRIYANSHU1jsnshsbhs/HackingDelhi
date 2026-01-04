@@ -262,17 +262,18 @@ function InteractiveIndiaMap({ metric = 'total_population', onStateClick }) {
         ))}
 
         {/* State Labels for major states */}
-        {['Maharashtra', 'Karnataka', 'Tamil Nadu', 'Gujarat', 'Uttar Pradesh', 'Rajasthan'].map(state => {
+        {['Maharashtra', 'Karnataka', 'Tamil Nadu', 'Gujarat', 'Uttar Pradesh', 'Rajasthan', 'Madhya Pradesh', 'West Bengal', 'Bihar', 'Andhra Pradesh'].map(state => {
           const stateInfo = INDIA_STATES[state];
+          if (!stateInfo) return null;
           return (
             <text
               key={`label-${state}`}
               x={stateInfo.cx}
               y={stateInfo.cy}
               textAnchor="middle"
-              className="text-[8px] font-semibold fill-gray-700 pointer-events-none"
+              className="text-[7px] font-semibold fill-gray-700 pointer-events-none select-none"
             >
-              {state.length > 10 ? state.substring(0, 8) + '...' : state}
+              {state.length > 12 ? state.substring(0, 10) + '.' : state}
             </text>
           );
         })}
