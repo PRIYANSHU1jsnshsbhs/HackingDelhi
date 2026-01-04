@@ -27,6 +27,7 @@ api_router = APIRouter(prefix="/api")
 
 EMERGENT_AUTH_URL = "https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data"
 
+# Add your routes to the router instead of directly to app
 def get_session_token(request: Request) -> Optional[str]:
     token = request.cookies.get("session_token")
     if not token:
@@ -120,20 +121,17 @@ async def create_session(request: Request, response: Response):
     user_id = f"user_{uuid.uuid4().hex[:12]}"
     session_token = f"session_{uuid.uuid4().hex}"
     
-    # Check if user exists
-    existing_user = None
-    for uid, user in in_memory_db["users"].items():
-        if user["email"] == user_data["email"]:
-            existing_user = user
-            user_id = uid
-            break
-    
+    existing_user = await db.users.find_one({"email": user_data["email"]}, {"_id": 0})
     if existing_user:
-        in_memory_db["users"][user_id].update({
-            "name": user_data["name"],
-            "picture": user_data.get("picture"),
-            "updated_at": datetime.now(timezone.utc)
-        })
+        user_id = existing_user["user_id"]
+        await db.users.update_one(
+            {"user_id": user_id},
+            {"$set": {
+                "name": user_data["name"],
+                "picture": user_data.get("picture"),
+                "updated_at": datetime.now(timezone.utc)
+            }}
+        )
     else:
         user_doc = {
             "user_id": user_id,
@@ -143,7 +141,7 @@ async def create_session(request: Request, response: Response):
             "role": "supervisor",
             "created_at": datetime.now(timezone.utc)
         }
-        in_memory_db["users"][user_id] = user_doc
+        await db.users.insert_one(user_doc)
     
     session_doc = {
         "user_id": user_id,
@@ -151,7 +149,7 @@ async def create_session(request: Request, response: Response):
         "expires_at": datetime.now(timezone.utc) + timedelta(days=7),
         "created_at": datetime.now(timezone.utc)
     }
-    in_memory_db["user_sessions"][session_token] = session_doc
+    await db.user_sessions.insert_one(session_doc)
     
     response.set_cookie(
         key="session_token",
@@ -163,7 +161,7 @@ async def create_session(request: Request, response: Response):
         max_age=7 * 24 * 60 * 60
     )
     
-    user = in_memory_db["users"][user_id]
+    user = await db.users.find_one({"user_id": user_id}, {"_id": 0})
     return {"user": user, "session_token": session_token}
 
 @api_router.post("/auth/dev-login")
@@ -177,15 +175,10 @@ async def dev_login(request: Request, response: Response):
     user_id = f"user_{uuid.uuid4().hex[:12]}"
     session_token = f"session_{uuid.uuid4().hex}"
     
-    # Check if user exists
-    existing_user = None
-    for uid, user in in_memory_db["users"].items():
-        if user["email"] == email:
-            existing_user = user
-            user_id = uid
-            break
-    
-    if not existing_user:
+    existing_user = await db.users.find_one({"email": email}, {"_id": 0})
+    if existing_user:
+        user_id = existing_user["user_id"]
+    else:
         user_doc = {
             "user_id": user_id,
             "email": email,
@@ -194,7 +187,7 @@ async def dev_login(request: Request, response: Response):
             "role": role,
             "created_at": datetime.now(timezone.utc)
         }
-        in_memory_db["users"][user_id] = user_doc
+        await db.users.insert_one(user_doc)
     
     session_doc = {
         "user_id": user_id,
@@ -202,7 +195,7 @@ async def dev_login(request: Request, response: Response):
         "expires_at": datetime.now(timezone.utc) + timedelta(days=7),
         "created_at": datetime.now(timezone.utc)
     }
-    in_memory_db["user_sessions"][session_token] = session_doc
+    await db.user_sessions.insert_one(session_doc)
     
     response.set_cookie(
         key="session_token",
@@ -214,7 +207,7 @@ async def dev_login(request: Request, response: Response):
         max_age=7 * 24 * 60 * 60
     )
     
-    user = in_memory_db["users"][user_id]
+    user = await db.users.find_one({"user_id": user_id}, {"_id": 0})
     return {"user": user, "session_token": session_token}
 
 @api_router.get("/auth/me")
@@ -224,8 +217,8 @@ async def get_me(user: dict = Depends(get_current_user)):
 @api_router.post("/auth/logout")
 async def logout(request: Request, response: Response):
     token = get_session_token(request)
-    if token and token in in_memory_db["user_sessions"]:
-        del in_memory_db["user_sessions"][token]
+    if token:
+        await db.user_sessions.delete_many({"session_token": token})
     response.delete_cookie(key="session_token", path="/")
     return {"message": "Logged out successfully"}
 
@@ -236,9 +229,12 @@ async def update_role(request: Request, user: dict = Depends(get_current_user)):
     if new_role not in ["supervisor", "district_admin", "state_analyst", "policy_maker"]:
         raise HTTPException(status_code=400, detail="Invalid role")
     
-    in_memory_db["users"][user["user_id"]]["role"] = new_role
+    await db.users.update_one(
+        {"user_id": user["user_id"]},
+        {"$set": {"role": new_role}}
+    )
     
-    updated_user = in_memory_db["users"][user["user_id"]]
+    updated_user = await db.users.find_one({"user_id": user["user_id"]}, {"_id": 0})
     return updated_user
 
 @api_router.get("/census/records")
@@ -246,20 +242,21 @@ async def get_census_records(
     flag_status: Optional[str] = None,
     user: dict = Depends(get_current_user)
 ):
-    records = list(in_memory_db["census_records"].values())
-    
+    query = {}
     if flag_status:
-        records = [r for r in records if r.get("flag_status") == flag_status]
+        query["flag_status"] = flag_status
+    
+    records = await db.census_records.find(query, {"_id": 0}).limit(100).to_list(100)
     
     if not records:
-        mock_records = generate_mock_census_data()
+        mock_records = await generate_mock_census_data()
         return mock_records[:100]
     
-    return records[:100]
+    return records
 
 @api_router.get("/census/records/{record_id}")
 async def get_census_record(record_id: str, user: dict = Depends(get_current_user)):
-    record = in_memory_db["census_records"].get(record_id)
+    record = await db.census_records.find_one({"record_id": record_id}, {"_id": 0})
     if not record:
         raise HTTPException(status_code=404, detail="Record not found")
     return record
@@ -273,19 +270,26 @@ async def review_record(
     if user["role"] not in ["supervisor", "district_admin"]:
         raise HTTPException(status_code=403, detail="Insufficient permissions")
     
-    record = in_memory_db["census_records"].get(record_id)
+    record = await db.census_records.find_one({"record_id": record_id}, {"_id": 0})
     if not record:
         raise HTTPException(status_code=404, detail="Record not found")
     
-    record["reviewed"] = True
-    record["reviewed_by"] = user["user_id"]
-    record["reviewed_at"] = datetime.now(timezone.utc)
-    record["review_action"] = review.action
+    update_data = {
+        "reviewed": True,
+        "reviewed_by": user["user_id"],
+        "reviewed_at": datetime.now(timezone.utc),
+        "review_action": review.action
+    }
     
     if review.action == "approve":
-        record["flag_status"] = "approved"
+        update_data["flag_status"] = "approved"
     elif review.action == "request_verification":
-        record["flag_status"] = "verification_requested"
+        update_data["flag_status"] = "verification_requested"
+    
+    await db.census_records.update_one(
+        {"record_id": record_id},
+        {"$set": update_data}
+    )
     
     audit_entry = {
         "audit_id": f"audit_{uuid.uuid4().hex[:12]}",
@@ -295,13 +299,17 @@ async def review_record(
         "details": {"record_id": record_id, "action": review.action},
         "timestamp": datetime.now(timezone.utc)
     }
-    in_memory_db["audit_logs"].append(audit_entry)
+    await db.audit_logs.insert_one(audit_entry)
     
-    return record
+    updated_record = await db.census_records.find_one({"record_id": record_id}, {"_id": 0})
+    return updated_record
 
 @api_router.get("/census/household/{household_id}")
 async def get_household(household_id: str, user: dict = Depends(get_current_user)):
-    members = [r for r in in_memory_db["census_records"].values() if r["household_id"] == household_id]
+    members = await db.census_records.find(
+        {"household_id": household_id},
+        {"_id": 0}
+    ).to_list(50)
     
     if not members:
         return {"household_id": household_id, "members": [], "graph": {"nodes": [], "edges": []}}
@@ -322,7 +330,7 @@ async def get_analytics_summary(user: dict = Depends(get_current_user)):
     if user["role"] not in ["state_analyst", "policy_maker", "district_admin"]:
         raise HTTPException(status_code=403, detail="Insufficient permissions")
     
-    records = list(in_memory_db["census_records"].values())
+    records = await db.census_records.find({}, {"_id": 0}).to_list(1000)
     
     if not records:
         return get_mock_analytics()
@@ -358,9 +366,10 @@ async def get_state_analytics(user: dict = Depends(get_current_user)):
     if user["role"] not in ["state_analyst", "policy_maker", "district_admin"]:
         raise HTTPException(status_code=403, detail="Insufficient permissions")
     
-    records = list(in_memory_db["census_records"].values())
+    records = await db.census_records.find({}, {"_id": 0}).to_list(2000)
     
     if not records:
+        # Return mock state-wise data for all Indian states
         return get_mock_state_analytics()
     
     state_data = {}
@@ -383,6 +392,7 @@ async def get_state_analytics(user: dict = Depends(get_current_user)):
         if flag_status in state_data[state]:
             state_data[state][flag_status] += 1
     
+    # Calculate average income for each state
     for state in state_data:
         if state_data[state]["total_population"] > 0:
             state_data[state]["avg_income"] = round(
@@ -392,6 +402,7 @@ async def get_state_analytics(user: dict = Depends(get_current_user)):
     
     return state_data
 
+
 @api_router.post("/policy/simulate")
 async def simulate_policy(
     simulation: PolicySimulation,
@@ -400,10 +411,10 @@ async def simulate_policy(
     if user["role"] != "policy_maker":
         raise HTTPException(status_code=403, detail="Only policy makers can run simulations")
     
-    records = list(in_memory_db["census_records"].values())
+    records = await db.census_records.find({}, {"_id": 0}).to_list(1000)
     
     if not records:
-        records = generate_mock_census_data()
+        records = await generate_mock_census_data()
     
     eligible = [r for r in records if r["income"] <= simulation.income_threshold]
     
@@ -432,12 +443,12 @@ async def get_audit_logs(user: dict = Depends(get_current_user)):
     if user["role"] not in ["state_analyst", "district_admin"]:
         raise HTTPException(status_code=403, detail="Insufficient permissions")
     
-    logs = in_memory_db["audit_logs"]
+    logs = await db.audit_logs.find({}, {"_id": 0}).sort("timestamp", -1).limit(100).to_list(100)
     
     if not logs:
         return get_mock_audit_logs()
     
-    return sorted(logs, key=lambda x: x["timestamp"], reverse=True)[:100]
+    return logs
 
 @api_router.get("/integrity/status/{record_id}")
 async def get_integrity_status(record_id: str, user: dict = Depends(get_current_user)):
@@ -457,7 +468,7 @@ async def get_audit_signals(record_id: str, user: dict = Depends(get_current_use
         "message": "ML integration placeholder"
     }
 
-def generate_mock_census_data():
+async def generate_mock_census_data():
     regions = ["North", "South", "East", "West", "Central"]
     districts = ["District A", "District B", "District C", "District D"]
     states = [
@@ -474,9 +485,8 @@ def generate_mock_census_data():
     records = []
     for i in range(50):
         household_id = f"HH{str(i // 3).zfill(4)}"
-        record_id = f"REC{str(i).zfill(6)}"
         record = {
-            "record_id": record_id,
+            "record_id": f"REC{str(i).zfill(6)}",
             "household_id": household_id,
             "name": names[i % len(names)],
             "age": 25 + (i % 50),
@@ -492,8 +502,8 @@ def generate_mock_census_data():
             "created_at": datetime.now(timezone.utc)
         }
         records.append(record)
-        in_memory_db["census_records"][record_id] = record
     
+    await db.census_records.insert_many(records)
     return records
 
 def get_mock_analytics():
@@ -520,6 +530,7 @@ def get_mock_state_analytics():
     
     state_data = {}
     for state in states:
+        # Generate realistic population ranges based on state size
         base_pop = random.randint(50000, 500000)
         state_data[state] = {
             "total_population": base_pop,
@@ -559,3 +570,7 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+@app.on_event("shutdown")
+async def shutdown_db_client():
+    client.close()
