@@ -293,7 +293,7 @@ frontend:
     status_history:
       - working: NA
         agent: "main"
-        comment: "Bar and pie charts using Recharts, privacy mode toggle"
+        comment: "Bar and pie charts using Recharts, privacy mode toggle. Added interactive India map with state-wise heatmaps showing population, pending reviews, priority cases, and average income. Features hover tooltips and clickable states."
 
   - task: "Policy Simulation Page"
     implemented: true
