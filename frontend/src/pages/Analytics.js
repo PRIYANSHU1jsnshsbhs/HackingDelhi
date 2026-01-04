@@ -4,6 +4,7 @@ import { Switch } from '../components/ui/switch';
 import { Label } from '../components/ui/label';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import axios from 'axios';
+import InteractiveIndiaMap from '../components/InteractiveIndiaMap';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -13,6 +14,8 @@ function Analytics() {
   const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(true);
   const [privacyMode, setPrivacyMode] = useState(false);
+  const [mapMetric, setMapMetric] = useState('total_population');
+  const [selectedState, setSelectedState] = useState(null);
 
   useEffect(() => {
     const fetchAnalytics = async () => {
