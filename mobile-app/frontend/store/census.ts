@@ -1,13 +1,13 @@
-import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import uuid from 'react-native-uuid';
+import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import uuid from "react-native-uuid";
 
 export interface CitizenData {
   id: string;
   name: string;
   age: string;
-  guardian: string;
+  sex: string;
   caste: string;
   income: string;
   voiceNote?: string;
@@ -20,7 +20,7 @@ export interface CitizenData {
   blockchainReceipt: {
     transactionHash: string;
     timestamp: string;
-    status: 'Anchored' | 'Pending';
+    status: "Anchored" | "Pending";
   };
   synced: boolean;
   createdAt: string;
@@ -47,42 +47,51 @@ interface CensusStore {
   logout: () => void;
 }
 
-export const useCensusStore = create<CensusStore>()(persist(
-  (set, get) => ({
-    enumerator: null,
-    surveys: [],
-    isOnline: true,
+export const useCensusStore = create<CensusStore>()(
+  persist(
+    (set, get) => ({
+      enumerator: null,
+      surveys: [],
+      isOnline: true,
 
-    setEnumerator: (info) => set({ enumerator: info }),
+      setEnumerator: (info) => set({ enumerator: info }),
 
-    addSurvey: (survey) => set((state) => ({
-      surveys: [...state.surveys, survey]
-    })),
+      addSurvey: (survey) =>
+        set((state) => ({
+          surveys: [...state.surveys, survey],
+        })),
 
-    updateSurvey: (id, data) => set((state) => ({
-      surveys: state.surveys.map(s => s.id === id ? { ...s, ...data } : s)
-    })),
+      updateSurvey: (id, data) =>
+        set((state) => ({
+          surveys: state.surveys.map((s) =>
+            s.id === id ? { ...s, ...data } : s
+          ),
+        })),
 
-    markAsSynced: (id) => set((state) => ({
-      surveys: state.surveys.map(s => s.id === id ? { ...s, synced: true } : s)
-    })),
+      markAsSynced: (id) =>
+        set((state) => ({
+          surveys: state.surveys.map((s) =>
+            s.id === id ? { ...s, synced: true } : s
+          ),
+        })),
 
-    setOnlineStatus: (status) => set({ isOnline: status }),
+      setOnlineStatus: (status) => set({ isOnline: status }),
 
-    getPendingSurveys: () => {
-      const state = get();
-      return state.surveys.filter(s => !s.synced);
-    },
+      getPendingSurveys: () => {
+        const state = get();
+        return state.surveys.filter((s) => !s.synced);
+      },
 
-    getSyncedSurveys: () => {
-      const state = get();
-      return state.surveys.filter(s => s.synced);
-    },
+      getSyncedSurveys: () => {
+        const state = get();
+        return state.surveys.filter((s) => s.synced);
+      },
 
-    logout: () => set({ enumerator: null, surveys: [] })
-  }),
-  {
-    name: 'census-storage',
-    storage: createJSONStorage(() => AsyncStorage)
-  }
-));
+      logout: () => set({ enumerator: null, surveys: [] }),
+    }),
+    {
+      name: "census-storage",
+      storage: createJSONStorage(() => AsyncStorage),
+    }
+  )
+);
