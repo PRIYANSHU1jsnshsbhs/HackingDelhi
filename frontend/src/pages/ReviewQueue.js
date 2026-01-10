@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Card } from '../components/ui/card';
-import { Button } from '../components/ui/button';
-import { Badge } from '../components/ui/badge';
-import { Eye, CheckCircle, AlertCircle } from 'lucide-react';
-import axios from 'axios';
-import { toast } from 'sonner';
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { Card } from "../components/ui/card";
+import { Button } from "../components/ui/button";
+import { Badge } from "../components/ui/badge";
+import { Eye, CheckCircle, AlertCircle } from "lucide-react";
+import axios from "axios";
+import { toast } from "sonner";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -13,18 +13,21 @@ function ReviewQueue() {
   const navigate = useNavigate();
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState('all');
+  const [filter, setFilter] = useState("all");
 
   const fetchRecords = async () => {
     try {
       setLoading(true);
-      const params = filter !== 'all' ? `?flag_status=${filter}` : '';
-      const response = await axios.get(`${BACKEND_URL}/api/census/records${params}`, {
-        withCredentials: true
-      });
+      const params = filter !== "all" ? `?flag_status=${filter}` : "";
+      const response = await axios.get(
+        `${BACKEND_URL}/api/census/records${params}`,
+        {
+          withCredentials: true,
+        }
+      );
       setRecords(response.data);
     } catch (error) {
-      toast.error('Failed to fetch records');
+      toast.error("Failed to fetch records");
     } finally {
       setLoading(false);
     }
@@ -32,7 +35,6 @@ function ReviewQueue() {
 
   useEffect(() => {
     fetchRecords();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filter]);
 
   const handleReview = async (recordId, action) => {
@@ -42,10 +44,10 @@ function ReviewQueue() {
         { action },
         { withCredentials: true }
       );
-      toast.success('Record reviewed successfully');
+      toast.success("Record reviewed successfully");
       fetchRecords();
     } catch (error) {
-      toast.error('Failed to review record');
+      toast.error("Failed to review record");
     }
   };
 
@@ -60,28 +62,30 @@ function ReviewQueue() {
   return (
     <div data-testid="review-queue" className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900">Review Queue</h1>
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900">
+          Review Queue
+        </h1>
         <div className="flex gap-2 flex-wrap">
           <Button
             data-testid="filter-all"
-            onClick={() => setFilter('all')}
-            variant={filter === 'all' ? 'default' : 'outline'}
+            onClick={() => setFilter("all")}
+            variant={filter === "all" ? "default" : "outline"}
             size="sm"
           >
             All
           </Button>
           <Button
             data-testid="filter-review"
-            onClick={() => setFilter('review')}
-            variant={filter === 'review' ? 'default' : 'outline'}
+            onClick={() => setFilter("review")}
+            variant={filter === "review" ? "default" : "outline"}
             size="sm"
           >
             Review
           </Button>
           <Button
             data-testid="filter-priority"
-            onClick={() => setFilter('priority')}
-            variant={filter === 'priority' ? 'default' : 'outline'}
+            onClick={() => setFilter("priority")}
+            variant={filter === "priority" ? "default" : "outline"}
             size="sm"
           >
             Priority
@@ -95,7 +99,9 @@ function ReviewQueue() {
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
               <div className="space-y-2 flex-1">
                 <div className="flex items-center gap-3 flex-wrap">
-                  <h3 className="text-lg font-semibold text-gray-900">{record.name}</h3>
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    {record.name}
+                  </h3>
                   <Badge
                     data-testid={`record-status-${record.record_id}`}
                     className={`status-badge status-${record.flag_status}`}
@@ -116,7 +122,9 @@ function ReviewQueue() {
                   </div>
                   <div>
                     <span className="text-gray-500">Household:</span>
-                    <span className="ml-2 font-medium">{record.household_id}</span>
+                    <span className="ml-2 font-medium">
+                      {record.household_id}
+                    </span>
                   </div>
                   <div>
                     <span className="text-gray-500">Age:</span>
@@ -132,7 +140,9 @@ function ReviewQueue() {
                   </div>
                   <div>
                     <span className="text-gray-500">Income:</span>
-                    <span className="ml-2 font-medium">₹{record.income.toLocaleString()}</span>
+                    <span className="ml-2 font-medium">
+                      ₹{record.income.toLocaleString()}
+                    </span>
                   </div>
                   <div>
                     <span className="text-gray-500">District:</span>
@@ -160,7 +170,7 @@ function ReviewQueue() {
                   <>
                     <Button
                       data-testid={`approve-${record.record_id}`}
-                      onClick={() => handleReview(record.record_id, 'approve')}
+                      onClick={() => handleReview(record.record_id, "approve")}
                       size="sm"
                       className="flex-1 lg:flex-none bg-green-600 hover:bg-green-700"
                     >
@@ -169,7 +179,9 @@ function ReviewQueue() {
                     </Button>
                     <Button
                       data-testid={`verify-${record.record_id}`}
-                      onClick={() => handleReview(record.record_id, 'request_verification')}
+                      onClick={() =>
+                        handleReview(record.record_id, "request_verification")
+                      }
                       size="sm"
                       variant="outline"
                       className="flex-1 lg:flex-none"
