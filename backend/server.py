@@ -2,6 +2,7 @@ from fastapi import FastAPI, APIRouter, HTTPException, Request, Response, Depend
 from fastapi.responses import JSONResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
+from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
 from pathlib import Path
@@ -14,7 +15,16 @@ import httpx
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
-# In-memory storage (replaces MongoDB)
+# MongoDB connection
+mongo_url = os.environ.get('MONGO_URL')
+if mongo_url:
+    mongo_client = AsyncIOMotorClient(mongo_url, tlsAllowInvalidCertificates=True)
+    mongo_db = mongo_client[os.environ.get('DB_NAME', 'governance_portal')]
+else:
+    mongo_client = None
+    mongo_db = None
+
+# In-memory storage (fallback when MongoDB not available)
 in_memory_db = {
     "users": {},
     "user_sessions": {},
@@ -246,6 +256,63 @@ async def get_census_records(
     flag_status: Optional[str] = None,
     user: dict = Depends(get_current_user)
 ):
+    # Fetch from MongoDB if available
+    if mongo_db is not None:
+        try:
+            surveys = await mongo_db.citizen_surveys.find().to_list(1000)
+            
+            # Transform citizen survey data to census record format
+            records = []
+            for survey in surveys:
+                # Determine flag status based on AI verification
+                ai_verification = survey.get('aiVerification', {})
+                conflict_detected = ai_verification.get('conflictDetected', False)
+                confidence = ai_verification.get('confidence', 100)
+                
+                flag_status_value = 'normal'
+                flag_source_value = None
+                
+                if conflict_detected:
+                    flag_status_value = 'priority'
+                    flag_source_value = 'AI'
+                elif confidence < 70:
+                    flag_status_value = 'review'
+                    flag_source_value = 'AI'
+                
+                record = {
+                    "record_id": survey.get('id', str(uuid.uuid4())),
+                    "household_id": f"HH{survey.get('id', '')[:8]}",
+                    "name": survey.get('name', 'Unknown'),
+                    "age": int(survey.get('age', 0)) if survey.get('age') else 0,
+                    "relation": "head",  # Default relation
+                    "caste": survey.get('caste', 'General'),
+                    "income": int(survey.get('income', 0)) if survey.get('income') else 0,
+                    "region": "Mobile Survey",
+                    "district": "District Unknown",
+                    "state": "State Unknown",
+                    "flag_status": flag_status_value,
+                    "flag_source": flag_source_value,
+                    "reviewed": survey.get('reviewed', False),
+                    "created_at": survey.get('createdAt', datetime.now(timezone.utc).isoformat()),
+                    "ai_verification": ai_verification,
+                    "blockchain_receipt": survey.get('blockchainReceipt', {}),
+                    "photo": survey.get('photoBase64'),
+                    "voice_note": survey.get('voiceNote'),
+                    "sex": survey.get('sex', 'Unknown')
+                }
+                records.append(record)
+            
+            # Filter by flag_status if provided
+            if flag_status:
+                records = [r for r in records if r.get("flag_status") == flag_status]
+            
+            logger.info(f"Fetched {len(records)} records from MongoDB")
+            return records
+        except Exception as e:
+            logger.error(f"Error fetching from MongoDB: {e}")
+            # Fall back to in-memory/mock data
+    
+    # Fallback to in-memory data
     records = list(in_memory_db["census_records"].values())
     
     if flag_status:
@@ -259,6 +326,51 @@ async def get_census_records(
 
 @api_router.get("/census/records/{record_id}")
 async def get_census_record(record_id: str, user: dict = Depends(get_current_user)):
+    # Try MongoDB first
+    if mongo_db is not None:
+        try:
+            survey = await mongo_db.citizen_surveys.find_one({"id": record_id})
+            if survey:
+                ai_verification = survey.get('aiVerification', {})
+                conflict_detected = ai_verification.get('conflictDetected', False)
+                confidence = ai_verification.get('confidence', 100)
+                
+                flag_status_value = 'normal'
+                flag_source_value = None
+                
+                if conflict_detected:
+                    flag_status_value = 'priority'
+                    flag_source_value = 'AI'
+                elif confidence < 70:
+                    flag_status_value = 'review'
+                    flag_source_value = 'AI'
+                
+                record = {
+                    "record_id": survey.get('id', str(uuid.uuid4())),
+                    "household_id": f"HH{survey.get('id', '')[:8]}",
+                    "name": survey.get('name', 'Unknown'),
+                    "age": int(survey.get('age', 0)) if survey.get('age') else 0,
+                    "relation": "head",
+                    "caste": survey.get('caste', 'General'),
+                    "income": int(survey.get('income', 0)) if survey.get('income') else 0,
+                    "region": "Mobile Survey",
+                    "district": "District Unknown",
+                    "state": "State Unknown",
+                    "flag_status": flag_status_value,
+                    "flag_source": flag_source_value,
+                    "reviewed": survey.get('reviewed', False),
+                    "created_at": survey.get('createdAt', datetime.now(timezone.utc).isoformat()),
+                    "ai_verification": ai_verification,
+                    "blockchain_receipt": survey.get('blockchainReceipt', {}),
+                    "photo": survey.get('photoBase64'),
+                    "voice_note": survey.get('voiceNote'),
+                    "sex": survey.get('sex', 'Unknown')
+                }
+                return record
+        except Exception as e:
+            logger.error(f"Error fetching record from MongoDB: {e}")
+    
+    # Fallback to in-memory
     record = in_memory_db["census_records"].get(record_id)
     if not record:
         raise HTTPException(status_code=404, detail="Record not found")
@@ -273,6 +385,62 @@ async def review_record(
     if user["role"] not in ["supervisor", "district_admin"]:
         raise HTTPException(status_code=403, detail="Insufficient permissions")
     
+    # Update in MongoDB if available
+    if mongo_db is not None:
+        try:
+            update_data = {
+                "reviewed": True,
+                "reviewed_by": user["user_id"],
+                "reviewed_at": datetime.now(timezone.utc).isoformat(),
+                "review_action": review.action
+            }
+            
+            result = await mongo_db.citizen_surveys.update_one(
+                {"id": record_id},
+                {"$set": update_data}
+            )
+            
+            if result.matched_count > 0:
+                # Fetch updated record
+                survey = await mongo_db.citizen_surveys.find_one({"id": record_id})
+                if survey:
+                    # Create audit log
+                    audit_entry = {
+                        "audit_id": f"audit_{uuid.uuid4().hex[:12]}",
+                        "user_id": user["user_id"],
+                        "user_name": user["name"],
+                        "action": f"Reviewed record {record_id}",
+                        "details": {"record_id": record_id, "action": review.action},
+                        "timestamp": datetime.now(timezone.utc).isoformat()
+                    }
+                    await mongo_db.audit_logs.insert_one(audit_entry)
+                    
+                    # Transform and return
+                    ai_verification = survey.get('aiVerification', {})
+                    record = {
+                        "record_id": survey.get('id'),
+                        "household_id": f"HH{survey.get('id', '')[:8]}",
+                        "name": survey.get('name'),
+                        "age": int(survey.get('age', 0)),
+                        "relation": "head",
+                        "caste": survey.get('caste'),
+                        "income": int(survey.get('income', 0)),
+                        "region": "Mobile Survey",
+                        "district": "District Unknown",
+                        "state": "State Unknown",
+                        "flag_status": "approved" if review.action == "approve" else "verification_requested",
+                        "reviewed": True,
+                        "reviewed_by": user["user_id"],
+                        "reviewed_at": update_data["reviewed_at"],
+                        "review_action": review.action,
+                        "ai_verification": ai_verification,
+                        "blockchain_receipt": survey.get('blockchainReceipt', {})
+                    }
+                    return record
+        except Exception as e:
+            logger.error(f"Error updating record in MongoDB: {e}")
+    
+    # Fallback to in-memory
     record = in_memory_db["census_records"].get(record_id)
     if not record:
         raise HTTPException(status_code=404, detail="Record not found")
@@ -559,3 +727,8 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+@app.on_event("shutdown")
+async def shutdown_db_client():
+    if mongo_client:
+        mongo_client.close()
