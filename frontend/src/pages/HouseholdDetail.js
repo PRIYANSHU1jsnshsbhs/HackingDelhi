@@ -31,6 +31,20 @@ const GraphVisualization = ({ nodes, edges }) => {
     };
   });
 
+  // Get edge color based on type
+  const getEdgeColor = (type) => {
+    switch (type) {
+      case 'spouse': return '#f472b6'; // pink
+      case 'parent-child': return '#60a5fa'; // blue
+      default: return '#cbd5e1'; // gray
+    }
+  };
+
+  // Get edge stroke style
+  const getEdgeStyle = (type) => {
+    return type === 'spouse' ? '5,5' : 'none';
+  };
+
   return (
     <svg
       width="100%"
@@ -50,8 +64,9 @@ const GraphVisualization = ({ nodes, edges }) => {
             y1={sourceNode.y}
             x2={targetNode.x}
             y2={targetNode.y}
-            stroke="#cbd5e1"
+            stroke={getEdgeColor(edge.type)}
             strokeWidth="2"
+            strokeDasharray={getEdgeStyle(edge.type)}
           />
         );
       })}
@@ -63,10 +78,20 @@ const GraphVisualization = ({ nodes, edges }) => {
             cx={node.x}
             cy={node.y}
             r={node.relation === "head" ? 25 : 20}
-            fill={node.relation === "head" ? "#FF6B35" : "#4ECDC4"}
+            fill={node.sex === 'Female' ? '#f472b6' : '#60a5fa'}
             stroke="white"
             strokeWidth="3"
           />
+          <text
+            x={node.x}
+            y={node.y + 5}
+            textAnchor="middle"
+            fill="white"
+            fontSize="10"
+            fontWeight="500"
+          >
+            {node.age || '?'}
+          </text>
           <text
             x={node.x}
             y={node.y + 40}
@@ -229,6 +254,53 @@ function HouseholdDetail() {
         <p className="text-base mt-1 text-gray-600">ID: {householdId}</p>
       </div>
 
+      {/* Household Info Card */}
+      {household.household_info && Object.keys(household.household_info).length > 0 && (
+        <Card className="p-6 bg-gradient-to-r from-orange-50 to-yellow-50">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Household Information</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+            <div>
+              <span className="text-gray-500">Housing Type:</span>
+              <span className="ml-2 font-medium capitalize">{household.household_info.housing_type}</span>
+            </div>
+            <div>
+              <span className="text-gray-500">Members:</span>
+              <span className="ml-2 font-medium">{household.household_info.household_size}</span>
+            </div>
+            <div>
+              <span className="text-gray-500">State:</span>
+              <span className="ml-2 font-medium">{household.household_info.state}</span>
+            </div>
+            <div>
+              <span className="text-gray-500">PIN Code:</span>
+              <span className="ml-2 font-medium">{household.household_info.pin_code}</span>
+            </div>
+            <div>
+              <span className="text-gray-500">Water Access:</span>
+              <span className={`ml-2 font-medium ${household.household_info.water_access === 'Yes' ? 'text-green-600' : 'text-red-600'}`}>
+                {household.household_info.water_access}
+              </span>
+            </div>
+            <div>
+              <span className="text-gray-500">Toilet Access:</span>
+              <span className={`ml-2 font-medium ${household.household_info.toilet_access === 'Yes' ? 'text-green-600' : 'text-red-600'}`}>
+                {household.household_info.toilet_access}
+              </span>
+            </div>
+            <div>
+              <span className="text-gray-500">Cooking Fuel:</span>
+              <span className="ml-2 font-medium">{household.household_info.cooking_fuel}</span>
+            </div>
+            <div>
+              <span className="text-gray-500">Internet:</span>
+              <span className={`ml-2 font-medium ${household.household_info.internet_access === 'Yes' ? 'text-green-600' : 'text-red-600'}`}>
+                {household.household_info.internet_access}
+              </span>
+            </div>
+          </div>
+        </Card>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card className="p-6">
           <div className="flex items-center justify-between mb-4">
@@ -254,14 +326,14 @@ function HouseholdDetail() {
                     <AlertTriangle className="h-4 w-4 text-yellow-600" />
                   )}
                 </div>
-                <div className="grid grid-cols-2 gap-2 text-sm">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-sm">
                   <div>
                     <span className="text-gray-500">Relation:</span>
-                    <span className="ml-2 font-medium">{member.relation}</span>
+                    <span className="ml-2 font-medium capitalize">{member.relation}</span>
                   </div>
                   <div>
-                    <span className="text-gray-500">Age:</span>
-                    <span className="ml-2 font-medium">{member.age}</span>
+                    <span className="text-gray-500">Age/Sex:</span>
+                    <span className="ml-2 font-medium">{member.age} / {member.sex || 'N/A'}</span>
                   </div>
                   <div>
                     <span className="text-gray-500">Caste:</span>
@@ -270,8 +342,16 @@ function HouseholdDetail() {
                   <div>
                     <span className="text-gray-500">Income:</span>
                     <span className="ml-2 font-medium">
-                      ₹{member.income.toLocaleString()}
+                      ₹{(member.income || 0).toLocaleString()}/mo
                     </span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">Employment:</span>
+                    <span className="ml-2 font-medium capitalize">{member.employment_status || 'N/A'}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">Welfare:</span>
+                    <span className="ml-2 font-medium">{member.welfare_score?.toFixed(2) || '0.00'}</span>
                   </div>
                 </div>
               </div>

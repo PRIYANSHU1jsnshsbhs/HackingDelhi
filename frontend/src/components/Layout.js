@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Outlet, useOutletContext, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '../components/ui/button';
+import MagnifyingGlass from '../components/MagnifyingGlass';
 import {
   Select,
   SelectContent,
@@ -73,6 +74,7 @@ function Layout() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <MagnifyingGlass />
       <header className="bg-white govt-header sticky top-0 z-40">
         <div className="flex items-center justify-between px-4 sm:px-6 lg:px-8 h-16">
           <div className="flex items-center space-x-4">
@@ -83,7 +85,7 @@ function Layout() {
             >
               {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
-            
+
             <div className="flex items-center space-x-2">
               <Shield className="h-8 w-8 text-[hsl(var(--saffron))]" />
               <div>
@@ -126,9 +128,8 @@ function Layout() {
 
       <div className="flex">
         <aside
-          className={`fixed lg:sticky top-16 left-0 z-30 w-64 h-[calc(100vh-4rem)] bg-white border-r border-gray-200 transition-transform duration-300 lg:translate-x-0 ${
-            sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-          }`}
+          className={`fixed lg:sticky top-16 left-0 z-30 w-64 h-[calc(100vh-4rem)] bg-white border-r border-gray-200 transition-transform duration-300 lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+            }`}
         >
           <nav className="p-4 space-y-2">
             {visibleMenuItems.map((item) => {
@@ -142,11 +143,10 @@ function Layout() {
                     navigate(item.path);
                     setSidebarOpen(false);
                   }}
-                  className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
-                    isActive
+                  className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${isActive
                       ? 'bg-[hsl(var(--saffron))] text-white'
                       : 'text-gray-700 hover:bg-gray-100'
-                  }`}
+                    }`}
                 >
                   <Icon className="h-5 w-5" />
                   <span>{item.label}</span>
@@ -163,7 +163,7 @@ function Layout() {
           />
         )}
 
-        <main className="flex-1 p-4 sm:p-6 lg:p-8">
+        <main id="page-content" className="flex-1 p-4 sm:p-6 lg:p-8">
           <Outlet context={{ user, setUser }} />
         </main>
       </div>
