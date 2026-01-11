@@ -127,6 +127,14 @@ FALLBACK_QA = {
     
     # GENERAL PLATFORM QUESTIONS (ALL ROLES)
     "general": {
+        "how do i verify census data": "To verify census data, review the household submissions in your Review Queue. Check for inconsistencies like income mismatches with occupation, validate identity documents, look for duplicate addresses, and examine family compositions. The AI system flags suspicious records automatically. You can approve legitimate records or reject fraudulent ones with detailed notes. All decisions are logged in the audit trail for accountability.",
+        
+        "what is the review queue workflow": "The review workflow has five steps: First, AI flags suspicious records with specific reasons. Second, the record enters your Review Queue with priority levels. Third, you investigate by examining the household data and supporting documents. Fourth, you either approve the record if legitimate or reject it with a detailed justification. Finally, your decision is logged in the audit trail for accountability and reporting.",
+        
+        "explain data quality metrics": "Data quality metrics measure the accuracy and completeness of census data. Key metrics include verification rates (percentage of approved vs total submissions), rejection rates (flagged fraudulent records), completeness scores (percentage of filled mandatory fields), consistency checks (cross-validation of related data points), and duplicate detection rates. These metrics help identify areas needing additional training or outreach.",
+        
+        "how to handle suspicious submissions": "When handling suspicious submissions, first review the AI flag reason carefully. Check all supporting documents and cross-reference data points. If the submission appears legitimate despite the flag (like a retired professional with low income), add detailed notes explaining your reasoning and approve it. If data seems fraudulent or incorrect, reject the submission with specific reasons and request the field agent to re-verify with the household in person.",
+        
         "what is this platform": "This is a Census Data Governance and Policy Simulation System designed for government officials to manage household census data, verify submissions through AI-powered validation, review flagged records, analyze demographic and socioeconomic trends, and simulate welfare policy impacts. The platform ensures data quality, accountability through audit trails, and provides role-based access control for security.",
         
         "how does ai verification work": "The AI verification system automatically analyzes all household submissions using machine learning algorithms trained on historical census data. It checks for inconsistencies like income mismatches with occupation types, validates document authenticity, detects duplicate addresses, identifies unusual family compositions, and flags suspicious patterns. Flagged records go to supervisors for manual review.",
@@ -146,28 +154,58 @@ def get_fallback_response(user_message: str, role: str, page: str) -> str:
     Uses fuzzy matching to find relevant pre-generated answers.
     """
     user_message_lower = user_message.lower().strip()
+    # Remove punctuation for better matching
+    user_message_clean = user_message_lower.replace('?', '').replace('!', '').replace('.', '')
+    
+    print(f"[FALLBACK] Checking message: '{user_message_clean}'")
+    print(f"[FALLBACK] Role: {role}, Page: {page}")
     
     # Check role-specific questions first
     if role in FALLBACK_QA and page in FALLBACK_QA[role]:
         page_qa = FALLBACK_QA[role][page]
         for question, answer in page_qa.items():
-            if question in user_message_lower or any(word in user_message_lower for word in question.split()[:3]):
+            question_clean = question.replace('?', '').replace('!', '').replace('.', '')
+            # Check exact match or if most words match
+            if question_clean in user_message_clean or user_message_clean in question_clean:
+                print(f"[FALLBACK] Matched role-specific question: {question}")
+                return answer
+            # Check if key words match (at least 3 words)
+            question_words = set(question_clean.split())
+            message_words = set(user_message_clean.split())
+            common_words = question_words & message_words
+            if len(common_words) >= 3 and len(question_words) > 0:
+                match_ratio = len(common_words) / len(question_words)
+                if match_ratio >= 0.6:
+                    print(f"[FALLBACK] Fuzzy matched role-specific: {question} (ratio: {match_ratio})")
+                    return answer
+    
+    # Check general questions with improved matching
+    for question, answer in FALLBACK_QA["general"].items():
+        question_clean = question.replace('?', '').replace('!', '').replace('.', '')
+        # Check exact match or substring
+        if question_clean in user_message_clean or user_message_clean in question_clean:
+            print(f"[FALLBACK] Matched general question: {question}")
+            return answer
+        # Check fuzzy match with key words
+        question_words = set(question_clean.split())
+        message_words = set(user_message_clean.split())
+        common_words = question_words & message_words
+        if len(common_words) >= 3 and len(question_words) > 0:
+            match_ratio = len(common_words) / len(question_words)
+            if match_ratio >= 0.6:
+                print(f"[FALLBACK] Fuzzy matched general: {question} (ratio: {match_ratio})")
                 return answer
     
-    # Check general questions
-    for question, answer in FALLBACK_QA["general"].items():
-        if question in user_message_lower:
-            return answer
+    print(f"[FALLBACK] No match found")
     
-    # Default fallback
+    # Default fallback with helpful suggestions
     return (
-        "I apologize, but I'm currently experiencing technical difficulties connecting to the AI service. "
-        "However, I can help you with questions about this census platform. Try asking about:\n\n"
-        "• Dashboard features and capabilities\n"
-        "• Review queue workflows\n"
-        "• Analytics and metrics\n"
-        "• Policy simulations\n"
-        "• Audit logs and accountability\n"
-        "• Your role-specific permissions\n\n"
-        "Please rephrase your question and I'll do my best to assist you."
+        "I'm having trouble finding specific information about that. However, I can help you with:\n\n"
+        "• **Dashboard features** - What you can do on your dashboard\n"
+        "• **Review workflows** - How to review and verify census data\n"
+        "• **Analytics** - Understanding metrics and reports\n"
+        "• **Policy simulations** - Testing welfare schemes\n"
+        "• **Audit logs** - Tracking changes and accountability\n"
+        "• **Role permissions** - What actions you can perform\n\n"
+        "Try asking a specific question from the topics above!"
     )

@@ -145,7 +145,21 @@ def generate_chatbot_response(
             page=page.lower() if page else None
         )
         
+        print(f"[DEBUG] RAG returned {len(retrieved_docs) if retrieved_docs else 0} documents")
+        
         if not retrieved_docs:
+            # No relevant docs found - try fallback first
+            print(f"[DEBUG] No RAG results, trying fallback...")
+            fallback_response = get_fallback_response(user_message, user_role, page)
+            if fallback_response and "I don't have" not in fallback_response:
+                print(f"[DEBUG] Using fallback response")
+                return {
+                    "response": fallback_response,
+                    "sources_used": 0,
+                    "error": None
+                }
+            # If no fallback either, return generic message
+            print(f"[DEBUG] No fallback match, using generic")
             return {
                 "response": "I don't have enough information to answer that question. Please contact your administrator or refer to the platform documentation.",
                 "sources_used": 0,
@@ -177,13 +191,35 @@ YOUR RESPONSE (Provide a complete, professional explanation in 2-5 sentences. Ba
         try:
             response_text = generate_answer(full_prompt, max_tokens=800)
             
+            print(f"[DEBUG] LLM response: {response_text[:100]}...")
+            
+            # Check if LLM gave an unhelpful/generic response
+            unhelpful_phrases = [
+                "i don't have sufficient information",
+                "i don't have enough information",
+                "please consult your administrator",
+                "i cannot answer",
+                "insufficient information",
+                "i'm not able to"
+            ]
+            
+            response_lower = response_text.lower()
+            is_unhelpful = any(phrase in response_lower for phrase in unhelpful_phrases)
+            
+            if is_unhelpful:
+                print(f"[DEBUG] LLM gave unhelpful response, trying fallback...")
+                fallback_response = get_fallback_response(user_message, user_role, page)
+                if fallback_response and not any(phrase in fallback_response.lower() for phrase in unhelpful_phrases):
+                    print(f"[DEBUG] Using fallback instead of unhelpful LLM response")
+                    response_text = fallback_response
+            
             # Check if response seems incomplete (ends abruptly without punctuation)
             if response_text and not response_text[-1] in '.!?':
                 response_text += "..."
                 
         except Exception as llm_error:
             # Fallback to pre-generated responses if LLM fails
-            print(f"LLM generation failed, using fallback: {llm_error}")
+            print(f"[DEBUG] LLM generation failed, using fallback: {llm_error}")
             response_text = get_fallback_response(user_message, user_role, page)
         
         # Step 5: Return structured response

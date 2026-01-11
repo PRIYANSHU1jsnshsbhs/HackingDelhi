@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Outlet, useOutletContext, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '../components/ui/button';
+import ChatbotWidget from './ChatbotWidget';
 import {
   Select,
   SelectContent,
@@ -166,6 +167,9 @@ function Layout() {
         <main className="flex-1 p-4 sm:p-6 lg:p-8">
           <Outlet context={{ user, setUser }} />
         </main>
+        
+        {/* Chatbot Widget - only show when user is logged in */}
+        {user && <ChatbotWidget userRole={user.role} />}
       </div>
     </div>
   );

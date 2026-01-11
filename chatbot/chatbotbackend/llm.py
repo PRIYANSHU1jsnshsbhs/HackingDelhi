@@ -17,20 +17,20 @@ if not GEMINI_API_KEY:
 
 genai.configure(api_key=GEMINI_API_KEY)
 
-# Try primary model, fallback to generic if needed
-PRIMARY_MODEL = 'gemini-2.5-flash'
-FALLBACK_MODEL = 'gemini-flash-latest'
+# Use gemini-2.5-flash-lite as alternative with good quota limits
+PRIMARY_MODEL = 'gemini-2.5-flash-lite'
+FALLBACK_MODEL = 'gemini-3-flash-preview'
 
 print("✓ Gemini API configured successfully")
 
 
-def generate_answer(prompt: str, max_tokens: int = 1000) -> str:
+def generate_answer(prompt: str, max_tokens: int = 2048) -> str:
     """
     Generate an answer using Google Gemini with automatic fallback.
     
     Args:
         prompt: Full prompt including system instructions and user query
-        max_tokens: Maximum response length (default 1000 for complete responses)
+        max_tokens: Maximum response length (default 2048 for complete responses)
     
     Returns:
         Generated text response
