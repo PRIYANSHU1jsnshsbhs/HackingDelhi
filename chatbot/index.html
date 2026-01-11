@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Census Governance Assistant</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .chat-container {
+            width: 90%;
+            max-width: 900px;
+            height: 90vh;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Header */
+        .chat-header {
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+            color: white;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chat-header h1 {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .chat-header .context-info {
+            font-size: 12px;
+            opacity: 0.9;
+            margin-top: 4px;
+        }
+
+        .clear-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: background 0.2s;
+        }
+
+        .clear-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        /* Messages Area */
+        .messages-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: #fafafa;
+        }
+
+        .message {
+            display: flex;
+            margin-bottom: 16px;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.user {
+            flex-direction: row-reverse;
+        }
+
+        .message-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+
+        .message.user .message-avatar {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .message.assistant .message-avatar {
+            background: #e5e7eb;
+            color: #374151;
+        }
+
+        .message-content {
+            max-width: 70%;
+            margin: 0 12px;
+        }
+
+        .message-bubble {
+            padding: 12px 16px;
+            border-radius: 12px;
+            line-height: 1.5;
+            font-size: 14px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .message.user .message-bubble {
+            background: #3b82f6;
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message.assistant .message-bubble {
+            background: white;
+            color: #1f2937;
+            border: 1px solid #e5e7eb;
+            border-bottom-left-radius: 4px;
+        }
+
+        .message-time {
+            font-size: 11px;
+            color: #9ca3af;
+            margin-top: 4px;
+            padding: 0 4px;
+        }
+
+        /* Typing Indicator */
+        .typing-indicator {
+            display: none;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .typing-indicator.active {
+            display: flex;
+        }
+
+        .typing-dots {
+            display: flex;
+            gap: 4px;
+            padding: 12px 16px;
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            margin-left: 48px;
+        }
+
+        .typing-dots span {
+            width: 8px;
+            height: 8px;
+            background: #9ca3af;
+            border-radius: 50%;
+            animation: typing 1.4s infinite;
+        }
+
+        .typing-dots span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dots span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typing {
+            0%, 60%, 100% {
+                transform: translateY(0);
+                opacity: 0.7;
+            }
+            30% {
+                transform: translateY(-10px);
+                opacity: 1;
+            }
+        }
+
+        /* Suggested Prompts */
+        .suggested-prompts {
+            padding: 12px 20px;
+            background: #f9fafb;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .suggested-prompts-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #6b7280;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .prompts-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .prompt-chip {
+            background: white;
+            border: 1px solid #d1d5db;
+            color: #374151;
+            padding: 6px 12px;
+            border-radius: 16px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .prompt-chip:hover:not(:disabled) {
+            background: #eff6ff;
+            border-color: #3b82f6;
+            color: #1e40af;
+        }
+
+        .prompt-chip:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Input Area */
+        .input-area {
+            padding: 16px 20px;
+            background: white;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .input-wrapper {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        #user-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        #user-input:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        #user-input:disabled {
+            background: #f3f4f6;
+            cursor: not-allowed;
+        }
+
+        #send-btn {
+            padding: 12px 24px;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        #send-btn:hover:not(:disabled) {
+            background: #2563eb;
+        }
+
+        #send-btn:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+
+        .input-footer {
+            font-size: 11px;
+            color: #9ca3af;
+            margin-top: 8px;
+            text-align: center;
+        }
+
+        /* Error Message */
+        .error-message {
+            display: none;
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #991b1b;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin: 12px 20px;
+            font-size: 13px;
+        }
+
+        .error-message.active {
+            display: block;
+        }
+
+        /* Scrollbar Styling */
+        .messages-container::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .messages-container::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        .messages-container::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+
+        .messages-container::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <!-- Header -->
+        <div class="chat-header">
+            <div>
+                <h1>AI Governance Assistant</h1>
+                <div class="context-info">
+                    <span id="role-display">Supervisor</span> • <span id="page-display">Dashboard</span>
+                </div>
+            </div>
+            <button class="clear-btn" onclick="clearChat()" aria-label="Clear chat history">
+                Clear Chat
+            </button>
+        </div>
+
+        <!-- Error Message -->
+        <div id="error-message" class="error-message"></div>
+
+        <!-- Messages Container -->
+        <div class="messages-container" id="messages-container">
+            <!-- Messages will be inserted here -->
+        </div>
+
+        <!-- Typing Indicator -->
+        <div class="typing-indicator" id="typing-indicator">
+            <div class="typing-dots">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+
+        <!-- Suggested Prompts -->
+        <div class="suggested-prompts">
+            <div class="suggested-prompts-label">
+                ✨ Suggested Questions
+            </div>
+            <div class="prompts-list" id="prompts-list">
+                <!-- Prompts will be inserted here -->
+            </div>
+        </div>
+
+        <!-- Input Area -->
+        <div class="input-area">
+            <div class="input-wrapper">
+                <input 
+                    type="text" 
+                    id="user-input" 
+                    placeholder="Ask about analytics, workflows, or policies..."
+                    maxlength="500"
+                    aria-label="Type your message"
+                >
+                <button id="send-btn" onclick="sendMessage()" aria-label="Send message">
+                    Send
+                </button>
+            </div>
+            <div class="input-footer">
+                Powered by AI • Responses based on platform knowledge
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // CONFIGURATION
+        // ============================================
+        const CHATBOT_API_URL = 'http://localhost:8001';
+        
+        // These would typically come from your authentication system
+        // For demo purposes, you can set them via window object or query params
+        const USER_ROLE = window.USER_ROLE || 'supervisor';
+        const CURRENT_PAGE = detectCurrentPage();
+
+        // Update header display
+        document.getElementById('role-display').textContent = formatRole(USER_ROLE);
+        document.getElementById('page-display').textContent = formatPage(CURRENT_PAGE);
+
+        // ============================================
+        // PAGE DETECTION
+        // ============================================
+        function detectCurrentPage() {
+            // Try to detect from URL path
+            const path = window.location.pathname.toLowerCase();
+            
+            if (path.includes('analytics')) return 'analytics';
+            if (path.includes('audit')) return 'audit';
+            if (path.includes('review')) return 'review';
+            if (path.includes('policy')) return 'policy_simulation';
+            if (path.includes('household')) return 'household_detail';
+            if (path.includes('dashboard')) return 'dashboard';
+            
+            // Default to dashboard
+            return 'dashboard';
+        }
+
+        // ============================================
+        // SUGGESTED PROMPTS BY PAGE
+        // ============================================
+        const SUGGESTED_PROMPTS = {
+            dashboard: [
+                "What can I do on this dashboard?",
+                "Explain my recent activity",
+                "What are my pending tasks?"
+            ],
+            analytics: [
+                "What metrics are shown here?",
+                "How is average income calculated?",
+                "Explain the demographic breakdown"
+            ],
+            audit: [
+                "What actions are tracked in audit logs?",
+                "How can I filter audit logs?",
+                "Why are certain actions flagged?"
+            ],
+            review: [
+                "Why are records flagged for review?",
+                "What is the review workflow?",
+                "How should I handle inconsistent data?"
+            ],
+            policy_simulation: [
+                "How do policy simulations work?",
+                "What eligibility criteria can I set?",
+                "Explain the budget calculation"
+            ],
+            household_detail: [
+                "What information is shown here?",
+                "How do I verify this household?",
+                "What are the validation rules?"
+            ]
+        };
+
+        // ============================================
+        // INITIALIZATION
+        // ============================================
+        function init() {
+            // Load suggested prompts
+            loadSuggestedPrompts();
+            
+            // Show welcome message
+            addAssistantMessage(
+                "Hello. I am your AI Governance Assistant. I can help you understand " +
+                "analytics, review workflows, policy simulations, and platform features. " +
+                "What would you like to know?"
+            );
+
+            // Focus input
+            document.getElementById('user-input').focus();
+
+            // Enter key to send
+            document.getElementById('user-input').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+        }
+
+        // ============================================
+        // SUGGESTED PROMPTS
+        // ============================================
+        function loadSuggestedPrompts() {
+            const promptsList = document.getElementById('prompts-list');
+            const prompts = SUGGESTED_PROMPTS[CURRENT_PAGE] || SUGGESTED_PROMPTS.dashboard;
+            
+            promptsList.innerHTML = '';
+            
+            prompts.slice(0, 3).forEach(prompt => {
+                const chip = document.createElement('button');
+                chip.className = 'prompt-chip';
+                chip.textContent = prompt;
+                chip.onclick = () => sendPrompt(prompt);
+                promptsList.appendChild(chip);
+            });
+        }
+
+        function sendPrompt(prompt) {
+            document.getElementById('user-input').value = prompt;
+            sendMessage();
+        }
+
+        // ============================================
+        // MESSAGE HANDLING
+        // ============================================
+        function addUserMessage(text) {
+            const container = document.getElementById('messages-container');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message user';
+            
+            messageDiv.innerHTML = `
+                <div class="message-avatar">U</div>
+                <div class="message-content">
+                    <div class="message-bubble">${escapeHtml(text)}</div>
+                    <div class="message-time">${getCurrentTime()}</div>
+                </div>
+            `;
+            
+            container.appendChild(messageDiv);
+            scrollToBottom();
+        }
+
+        function addAssistantMessage(text) {
+            const container = document.getElementById('messages-container');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message assistant';
+            
+            messageDiv.innerHTML = `
+                <div class="message-avatar">AI</div>
+                <div class="message-content">
+                    <div class="message-bubble">${escapeHtml(text)}</div>
+                    <div class="message-time">${getCurrentTime()}</div>
+                </div>
+            `;
+            
+            container.appendChild(messageDiv);
+            scrollToBottom();
+        }
+
+        // ============================================
+        // SEND MESSAGE
+        // ============================================
+        async function sendMessage() {
+            const input = document.getElementById('user-input');
+            const sendBtn = document.getElementById('send-btn');
+            const message = input.value.trim();
+            
+            if (!message) return;
+
+            // Disable input
+            input.disabled = true;
+            sendBtn.disabled = true;
+            disablePrompts();
+            hideError();
+
+            // Add user message to UI
+            addUserMessage(message);
+            input.value = '';
+
+            // Show typing indicator
+            showTyping();
+
+            try {
+                // Call backend API
+                const response = await fetch(`${CHATBOT_API_URL}/chat`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message: message,
+                        role: USER_ROLE,
+                        page: CURRENT_PAGE
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API error: ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                // Hide typing indicator
+                hideTyping();
+
+                // Add assistant response
+                addAssistantMessage(data.response || data.answer || "I apologize, but I couldn't generate a response.");
+
+            } catch (error) {
+                console.error('Chat API error:', error);
+                hideTyping();
+                showError('Failed to connect to AI assistant. Please ensure the chatbot server is running at ' + CHATBOT_API_URL);
+                
+                addAssistantMessage(
+                    "I am currently unable to connect. Please verify that the chatbot server " +
+                    "is running at http://localhost:8001 and try again."
+                );
+            } finally {
+                // Re-enable input
+                input.disabled = false;
+                sendBtn.disabled = false;
+                enablePrompts();
+                input.focus();
+            }
+        }
+
+        // ============================================
+        // UI HELPERS
+        // ============================================
+        function showTyping() {
+            document.getElementById('typing-indicator').classList.add('active');
+            scrollToBottom();
+        }
+
+        function hideTyping() {
+            document.getElementById('typing-indicator').classList.remove('active');
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('error-message');
+            errorDiv.textContent = message;
+            errorDiv.classList.add('active');
+        }
+
+        function hideError() {
+            document.getElementById('error-message').classList.remove('active');
+        }
+
+        function disablePrompts() {
+            document.querySelectorAll('.prompt-chip').forEach(chip => {
+                chip.disabled = true;
+            });
+        }
+
+        function enablePrompts() {
+            document.querySelectorAll('.prompt-chip').forEach(chip => {
+                chip.disabled = false;
+            });
+        }
+
+        function scrollToBottom() {
+            const container = document.getElementById('messages-container');
+            setTimeout(() => {
+                container.scrollTop = container.scrollHeight;
+            }, 100);
+        }
+
+        function clearChat() {
+            if (confirm('Are you sure you want to clear the chat history?')) {
+                document.getElementById('messages-container').innerHTML = '';
+                init();
+            }
+        }
+
+        // ============================================
+        // UTILITY FUNCTIONS
+        // ============================================
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function getCurrentTime() {
+            return new Date().toLocaleTimeString('en-US', { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+        }
+
+        function formatRole(role) {
+            return role.split('_').map(word => 
+                word.charAt(0).toUpperCase() + word.slice(1)
+            ).join(' ');
+        }
+
+        function formatPage(page) {
+            return page.split('_').map(word => 
+                word.charAt(0).toUpperCase() + word.slice(1)
+            ).join(' ');
+        }
+
+        // ============================================
+        // START APPLICATION
+        // ============================================
+        init();
+    </script>
+</body>
+</html>

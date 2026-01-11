@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "../components/ui/button";
 import { Card } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
+import ChatbotWidget from "../components/ChatbotWidget";
 import Shepherd from "shepherd.js";
 import "shepherd.js/dist/css/shepherd.css";
 import "../shepherd-custom.css";
@@ -429,8 +430,8 @@ const LandingPage = () => {
         id: "welcome",
         title:
           language === "en"
-            ? "Welcome to Census Portal! 👋"
-            : "जनगणना पोर्टल में आपका स्वागत है! 👋",
+            ? "Welcome to Census Portal"
+            : "जनगणना पोर्टल में आपका स्वागत है",
         text:
           language === "en"
             ? "Let's take a quick tour to show you all the amazing features we offer."
@@ -473,7 +474,7 @@ const LandingPage = () => {
       {
         id: "language",
         attachTo: { element: ".language-selector", on: "bottom" },
-        title: language === "en" ? "Language Selector 🌐" : "भाषा चयनकर्ता 🌐",
+        title: language === "en" ? "Language Selector" : "भाषा चयनकर्ता",
         text:
           language === "en"
             ? "Switch between English and Hindi anytime. All content updates instantly!"
@@ -493,7 +494,7 @@ const LandingPage = () => {
       {
         id: "features",
         attachTo: { element: "#features", on: "top" },
-        title: language === "en" ? "Core Features ⚡" : "मुख्य विशेषताएं ⚡",
+        title: language === "en" ? "Core Features" : "मुख्य विशेषताएं",
         text:
           language === "en"
             ? "Discover our unified document management, secure verification, fast applications, and transparent tracking systems."
@@ -514,7 +515,7 @@ const LandingPage = () => {
         id: "about",
         attachTo: { element: "#about", on: "top" },
         title:
-          language === "en" ? "About the Platform 📊" : "मंच के बारे में 📊",
+          language === "en" ? "About the Platform" : "मंच के बारे में",
         text:
           language === "en"
             ? "Built for modern governance with cutting-edge technology, OAuth2 authentication, and real-time analytics."
@@ -534,7 +535,7 @@ const LandingPage = () => {
       {
         id: "video",
         attachTo: { element: ".video-section", on: "top" },
-        title: language === "en" ? "Video Tutorial 🎥" : "वीडियो ट्यूटोरियल 🎥",
+        title: language === "en" ? "Video Tutorial" : "वीडियो ट्यूटोरियल",
         text:
           language === "en"
             ? "Watch our comprehensive guide to learn how to navigate and use all features effectively."
@@ -554,7 +555,7 @@ const LandingPage = () => {
       {
         id: "faq",
         attachTo: { element: "#faq", on: "top" },
-        title: language === "en" ? "FAQs ❓" : "सामान्य प्रश्न ❓",
+        title: language === "en" ? "Frequently Asked Questions" : "सामान्य प्रश्न",
         text:
           language === "en"
             ? "Find answers to common questions about platform usage, security, and accessibility."
@@ -1049,6 +1050,9 @@ const LandingPage = () => {
       >
         <Compass className="h-6 w-6 group-hover:rotate-180 transition-transform duration-500" />
       </button>
+      
+      {/* Chatbot for general questions on landing page */}
+      <ChatbotWidget userRole="state_analyst" />
     </div>
   );
 };
