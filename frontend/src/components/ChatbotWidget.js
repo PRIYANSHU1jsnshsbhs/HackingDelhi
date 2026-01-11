@@ -6,14 +6,14 @@ const CHATBOT_API_URL = "http://localhost:8001";
 
 const ChatbotWidget = ({ userRole }) => {
   const location = useLocation();
-  
+
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
-  
+
   // Get role from prop or default to state_analyst
   const role = userRole || "state_analyst";
 
@@ -86,7 +86,8 @@ const ChatbotWidget = ({ userRole }) => {
 
       const assistantMessage = {
         role: "assistant",
-        content: data.response || data.answer || "I couldn't generate a response.",
+        content:
+          data.response || data.answer || "I couldn't generate a response.",
         time: getCurrentTime(),
       };
 
@@ -132,7 +133,7 @@ const ChatbotWidget = ({ userRole }) => {
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-24 right-8 w-14 h-14 bg-gradient-to-br from-blue-600 to-blue-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center z-40 hover:scale-110"
+          className="fixed bottom-24 right-8 w-14 h-14 bg-gradient-to-br from-[#EA9000] to-[#d17f00] text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center z-40 hover:scale-110"
           aria-label="Open chat"
         >
           <MessageCircle className="w-6 h-6" />
@@ -143,7 +144,7 @@ const ChatbotWidget = ({ userRole }) => {
       {isOpen && (
         <div className="fixed bottom-24 right-8 w-[380px] h-[600px] bg-white rounded-lg shadow-2xl flex flex-col z-40 border border-gray-200">
           {/* Header */}
-          <div className="bg-gradient-to-r from-blue-900 to-blue-600 text-white p-4 rounded-t-lg flex items-center justify-between">
+          <div className="bg-gradient-to-r from-[#b56500] to-[#EA9000] text-white p-4 rounded-t-lg flex items-center justify-between">
             <div>
               <h3 className="font-semibold text-base">Census Assistant</h3>
               <p className="text-xs opacity-90">Always here to help</p>
@@ -183,7 +184,7 @@ const ChatbotWidget = ({ userRole }) => {
                   <div
                     className={`rounded-lg p-3 ${
                       msg.role === "user"
-                        ? "bg-blue-600 text-white rounded-br-sm"
+                        ? "bg-[#EA9000] text-white rounded-br-sm"
                         : "bg-white border border-gray-200 text-gray-800 rounded-bl-sm"
                     }`}
                   >
@@ -222,7 +223,7 @@ const ChatbotWidget = ({ userRole }) => {
                   key={idx}
                   onClick={() => sendMessage(prompt)}
                   disabled={isTyping}
-                  className="text-xs bg-white border border-gray-300 text-gray-700 px-3 py-1.5 rounded-full hover:bg-blue-50 hover:border-blue-400 hover:text-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="text-xs bg-white border border-gray-300 text-gray-700 px-3 py-1.5 rounded-full hover:bg-orange-50 hover:border-[#EA9000] hover:text-[#b56500] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {prompt}
                 </button>
@@ -241,12 +242,12 @@ const ChatbotWidget = ({ userRole }) => {
                 onKeyPress={handleKeyPress}
                 placeholder="Type your question..."
                 disabled={isTyping}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#EA9000] disabled:bg-gray-100"
               />
               <button
                 onClick={() => sendMessage()}
                 disabled={!inputValue.trim() || isTyping}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
+                className="px-4 py-2 bg-[#EA9000] text-white rounded-lg hover:bg-[#d17f00] disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
               >
                 <Send className="w-4 h-4" />
               </button>

@@ -1,15 +1,20 @@
-import React, { useState } from 'react';
-import { Outlet, useOutletContext, useNavigate, useLocation } from 'react-router-dom';
-import { Button } from '../components/ui/button';
-import ChatbotWidget from './ChatbotWidget';
-import MagnifyingGlass from './MagnifyingGlass';
+import React, { useState } from "react";
+import {
+  Outlet,
+  useOutletContext,
+  useNavigate,
+  useLocation,
+} from "react-router-dom";
+import { Button } from "../components/ui/button";
+import ChatbotWidget from "./ChatbotWidget";
+import MagnifyingGlass from "./MagnifyingGlass";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '../components/ui/select';
+} from "../components/ui/select";
 import {
   LayoutDashboard,
   FileText,
@@ -19,18 +24,18 @@ import {
   Shield,
   Menu,
   X,
-  UserCircle
-} from 'lucide-react';
-import axios from 'axios';
-import { toast } from 'sonner';
+  UserCircle,
+} from "lucide-react";
+import axios from "axios";
+import { toast } from "sonner";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
 const ROLE_LABELS = {
-  supervisor: 'Supervisor',
-  district_admin: 'District Admin',
-  state_analyst: 'State Analyst',
-  policy_maker: 'Policy Maker'
+  supervisor: "Supervisor",
+  district_admin: "District Admin",
+  state_analyst: "State Analyst",
+  policy_maker: "Policy Maker",
 };
 
 function Layout() {
@@ -41,11 +46,15 @@ function Layout() {
 
   const handleLogout = async () => {
     try {
-      await axios.post(`${BACKEND_URL}/api/auth/logout`, {}, { withCredentials: true });
-      navigate('/login');
+      await axios.post(
+        `${BACKEND_URL}/api/auth/logout`,
+        {},
+        { withCredentials: true }
+      );
+      navigate("/login");
     } catch (error) {
-      console.error('Logout error:', error);
-      navigate('/login');
+      console.error("Logout error:", error);
+      navigate("/login");
     }
   };
 
@@ -59,19 +68,46 @@ function Layout() {
       setUser(response.data);
       toast.success(`Role switched to ${ROLE_LABELS[newRole]}`);
     } catch (error) {
-      toast.error('Failed to switch role');
+      toast.error("Failed to switch role");
     }
   };
 
   const menuItems = [
-    { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', roles: ['supervisor', 'district_admin', 'state_analyst', 'policy_maker'] },
-    { path: '/review', icon: FileText, label: 'Review Queue', roles: ['supervisor', 'district_admin'] },
-    { path: '/analytics', icon: BarChart3, label: 'Analytics', roles: ['state_analyst', 'district_admin', 'policy_maker'] },
-    { path: '/policy', icon: Settings, label: 'Policy Simulation', roles: ['policy_maker'] },
-    { path: '/audit', icon: Shield, label: 'Audit Logs', roles: ['state_analyst', 'district_admin'] },
+    {
+      path: "/dashboard",
+      icon: LayoutDashboard,
+      label: "Dashboard",
+      roles: ["supervisor", "district_admin", "state_analyst", "policy_maker"],
+    },
+    {
+      path: "/review",
+      icon: FileText,
+      label: "Review Queue",
+      roles: ["supervisor", "district_admin"],
+    },
+    {
+      path: "/analytics",
+      icon: BarChart3,
+      label: "Analytics",
+      roles: ["state_analyst", "district_admin", "policy_maker"],
+    },
+    {
+      path: "/policy",
+      icon: Settings,
+      label: "Policy Simulation",
+      roles: ["policy_maker"],
+    },
+    {
+      path: "/audit",
+      icon: Shield,
+      label: "Audit Logs",
+      roles: ["state_analyst", "district_admin"],
+    },
   ];
 
-  const visibleMenuItems = menuItems.filter(item => item.roles.includes(user?.role));
+  const visibleMenuItems = menuItems.filter((item) =>
+    item.roles.includes(user?.role)
+  );
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -84,21 +120,32 @@ function Layout() {
               onClick={() => setSidebarOpen(!sidebarOpen)}
               className="lg:hidden p-2 rounded-md hover:bg-gray-100"
             >
-              {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              {sidebarOpen ? (
+                <X className="h-5 w-5" />
+              ) : (
+                <Menu className="h-5 w-5" />
+              )}
             </button>
 
             <div className="flex items-center space-x-2">
               <Shield className="h-8 w-8 text-[hsl(var(--saffron))]" />
               <div>
-                <h1 className="text-base sm:text-lg font-bold text-gray-900">Governance Portal</h1>
-                <p className="text-xs text-gray-500 hidden sm:block">Census Intelligence System</p>
+                <h1 className="text-base sm:text-lg font-bold text-gray-900">
+                  Governance Portal
+                </h1>
+                <p className="text-xs text-gray-500 hidden sm:block">
+                  Census Intelligence System
+                </p>
               </div>
             </div>
           </div>
 
           <div className="flex items-center space-x-4">
             <Select value={user?.role} onValueChange={handleRoleChange}>
-              <SelectTrigger data-testid="role-switcher" className="w-[140px] sm:w-[180px] h-9 text-sm">
+              <SelectTrigger
+                data-testid="role-switcher"
+                className="w-[140px] sm:w-[180px] h-9 text-sm"
+              >
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -111,7 +158,9 @@ function Layout() {
 
             <div className="hidden sm:flex items-center space-x-2">
               <UserCircle className="h-5 w-5 text-gray-500" />
-              <span className="text-sm font-medium text-gray-700">{user?.name}</span>
+              <span className="text-sm font-medium text-gray-700">
+                {user?.name}
+              </span>
             </div>
 
             <Button
@@ -129,8 +178,9 @@ function Layout() {
 
       <div className="flex">
         <aside
-          className={`fixed lg:sticky top-16 left-0 z-30 w-64 h-[calc(100vh-4rem)] bg-white border-r border-gray-200 transition-transform duration-300 lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-            }`}
+          className={`fixed lg:sticky top-16 left-0 z-30 w-64 h-[calc(100vh-4rem)] bg-white border-r border-gray-200 transition-transform duration-300 lg:translate-x-0 ${
+            sidebarOpen ? "translate-x-0" : "-translate-x-full"
+          }`}
         >
           <nav className="p-4 space-y-2">
             {visibleMenuItems.map((item) => {
@@ -144,10 +194,11 @@ function Layout() {
                     navigate(item.path);
                     setSidebarOpen(false);
                   }}
-                  className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${isActive
-                      ? 'bg-[hsl(var(--saffron))] text-white'
-                      : 'text-gray-700 hover:bg-gray-100'
-                    }`}
+                  className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+                    isActive
+                      ? "bg-[hsl(var(--saffron))] text-white"
+                      : "text-gray-700 hover:bg-gray-100"
+                  }`}
                 >
                   <Icon className="h-5 w-5" />
                   <span>{item.label}</span>
@@ -167,7 +218,7 @@ function Layout() {
         <main id="page-content" className="flex-1 p-4 sm:p-6 lg:p-8">
           <Outlet context={{ user, setUser }} />
         </main>
-        
+
         {/* Chatbot Widget - only show when user is logged in */}
         {user && <ChatbotWidget userRole={user.role} />}
       </div>
