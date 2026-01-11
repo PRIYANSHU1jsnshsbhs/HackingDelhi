@@ -113,6 +113,11 @@ function ReviewQueue() {
                       Source: {record.flag_source}
                     </span>
                   )}
+                  {record.exclusion_error_risk_score > 0.5 && (
+                    <span className="text-xs px-2 py-1 bg-red-100 text-red-700 rounded">
+                      Risk: {(record.exclusion_error_risk_score * 100).toFixed(0)}%
+                    </span>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm">
@@ -127,8 +132,8 @@ function ReviewQueue() {
                     </span>
                   </div>
                   <div>
-                    <span className="text-gray-500">Age:</span>
-                    <span className="ml-2 font-medium">{record.age}</span>
+                    <span className="text-gray-500">Age/Sex:</span>
+                    <span className="ml-2 font-medium">{record.age} / {record.sex || 'N/A'}</span>
                   </div>
                   <div>
                     <span className="text-gray-500">Region:</span>
@@ -141,16 +146,34 @@ function ReviewQueue() {
                   <div>
                     <span className="text-gray-500">Income:</span>
                     <span className="ml-2 font-medium">
-                      ₹{record.income.toLocaleString()}
+                      ₹{(record.income || 0).toLocaleString()}/mo
                     </span>
-                  </div>
-                  <div>
-                    <span className="text-gray-500">District:</span>
-                    <span className="ml-2 font-medium">{record.district}</span>
                   </div>
                   <div>
                     <span className="text-gray-500">State:</span>
                     <span className="ml-2 font-medium">{record.state}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">Ration Card:</span>
+                    <span className="ml-2 font-medium">{record.ration_card_type || 'N/A'}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">Employment:</span>
+                    <span className="ml-2 font-medium capitalize">{record.employment_status || 'N/A'}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">Welfare Score:</span>
+                    <span className="ml-2 font-medium">{record.welfare_score?.toFixed(2) || '0.00'}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">Schemes:</span>
+                    <span className="ml-2 font-medium">{record.scheme_enrollment_count || 0} enrolled</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">Leakage:</span>
+                    <span className={`ml-2 font-medium ${record.scheme_leakage_flag === 1 ? 'text-red-600' : 'text-green-600'}`}>
+                      {record.scheme_leakage_flag === 1 ? 'Yes' : 'No'}
+                    </span>
                   </div>
                 </div>
               </div>
