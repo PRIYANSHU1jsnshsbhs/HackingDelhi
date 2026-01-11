@@ -1,0 +1,206 @@
+# Copyright Governance Portal. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+# Channel configuration for GovernanceNet
+# Generate artifacts with:
+#   configtxgen -profile GovernanceGenesis -outputBlock ./channel-artifacts/genesis.block -channelID system-channel
+#   configtxgen -profile CensusChannel -outputCreateChannelTx ./channel-artifacts/census-channel.tx -channelID census-channel
+
+---
+Organizations:
+  - &OrdererOrg
+    Name: OrdererOrg
+    ID: OrdererMSP
+    MSPDir: crypto-config/ordererOrganizations/governance.com/msp
+    Policies:
+      Readers:
+        Type: Signature
+        Rule: "OR('OrdererMSP.member')"
+      Writers:
+        Type: Signature
+        Rule: "OR('OrdererMSP.member')"
+      Admins:
+        Type: Signature
+        Rule: "OR('OrdererMSP.admin')"
+    OrdererEndpoints:
+      - orderer.governance.com:7050
+      - orderer2.governance.com:8050
+      - orderer3.governance.com:9050
+
+  - &StateOrg
+    Name: StateMSP
+    ID: StateMSP
+    MSPDir: crypto-config/peerOrganizations/state.governance.com/msp
+    Policies:
+      Readers:
+        Type: Signature
+        Rule: "OR('StateMSP.admin', 'StateMSP.peer', 'StateMSP.client')"
+      Writers:
+        Type: Signature
+        Rule: "OR('StateMSP.admin', 'StateMSP.client')"
+      Admins:
+        Type: Signature
+        Rule: "OR('StateMSP.admin')"
+      Endorsement:
+        Type: Signature
+        Rule: "OR('StateMSP.peer')"
+    AnchorPeers:
+      - Host: peer0.state.governance.com
+        Port: 7051
+
+  - &DistrictOrg
+    Name: DistrictMSP
+    ID: DistrictMSP
+    MSPDir: crypto-config/peerOrganizations/district.governance.com/msp
+    Policies:
+      Readers:
+        Type: Signature
+        Rule: "OR('DistrictMSP.admin', 'DistrictMSP.peer', 'DistrictMSP.client')"
+      Writers:
+        Type: Signature
+        Rule: "OR('DistrictMSP.admin', 'DistrictMSP.client')"
+      Admins:
+        Type: Signature
+        Rule: "OR('DistrictMSP.admin')"
+      Endorsement:
+        Type: Signature
+        Rule: "OR('DistrictMSP.peer')"
+    AnchorPeers:
+      - Host: peer0.district.governance.com
+        Port: 9051
+
+  - &AuditOrg
+    Name: AuditMSP
+    ID: AuditMSP
+    MSPDir: crypto-config/peerOrganizations/audit.governance.com/msp
+    Policies:
+      Readers:
+        Type: Signature
+        Rule: "OR('AuditMSP.admin', 'AuditMSP.peer', 'AuditMSP.client')"
+      Writers:
+        Type: Signature
+        Rule: "OR('AuditMSP.admin')" # Audit is read-only, minimal write
+      Admins:
+        Type: Signature
+        Rule: "OR('AuditMSP.admin')"
+      Endorsement:
+        Type: Signature
+        Rule: "OR('AuditMSP.peer')"
+    AnchorPeers:
+      - Host: peer0.audit.governance.com
+        Port: 11051
+
+Capabilities:
+  Channel: &ChannelCapabilities
+    V2_0: true
+  Orderer: &OrdererCapabilities
+    V2_0: true
+  Application: &ApplicationCapabilities
+    V2_5: true
+
+Application: &ApplicationDefaults
+  Organizations:
+  Policies:
+    Readers:
+      Type: ImplicitMeta
+      Rule: "ANY Readers"
+    Writers:
+      Type: ImplicitMeta
+      Rule: "ANY Writers"
+    Admins:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Admins"
+    LifecycleEndorsement:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Endorsement"
+    Endorsement:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Endorsement"
+  Capabilities:
+    <<: *ApplicationCapabilities
+
+Orderer: &OrdererDefaults
+  OrdererType: etcdraft
+  Addresses:
+    - orderer.governance.com:7050
+    - orderer2.governance.com:8050
+    - orderer3.governance.com:9050
+  EtcdRaft:
+    Consenters:
+      - Host: orderer.governance.com
+        Port: 7050
+        ClientTLSCert: crypto-config/ordererOrganizations/governance.com/orderers/orderer.governance.com/tls/server.crt
+        ServerTLSCert: crypto-config/ordererOrganizations/governance.com/orderers/orderer.governance.com/tls/server.crt
+      - Host: orderer2.governance.com
+        Port: 8050
+        ClientTLSCert: crypto-config/ordererOrganizations/governance.com/orderers/orderer2.governance.com/tls/server.crt
+        ServerTLSCert: crypto-config/ordererOrganizations/governance.com/orderers/orderer2.governance.com/tls/server.crt
+      - Host: orderer3.governance.com
+        Port: 9050
+        ClientTLSCert: crypto-config/ordererOrganizations/governance.com/orderers/orderer3.governance.com/tls/server.crt
+        ServerTLSCert: crypto-config/ordererOrganizations/governance.com/orderers/orderer3.governance.com/tls/server.crt
+  BatchTimeout: 2s
+  BatchSize:
+    MaxMessageCount: 10
+    AbsoluteMaxBytes: 99 MB
+    PreferredMaxBytes: 512 KB
+  Organizations:
+  Policies:
+    Readers:
+      Type: ImplicitMeta
+      Rule: "ANY Readers"
+    Writers:
+      Type: ImplicitMeta
+      Rule: "ANY Writers"
+    Admins:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Admins"
+    BlockValidation:
+      Type: ImplicitMeta
+      Rule: "ANY Writers"
+
+Channel: &ChannelDefaults
+  Policies:
+    Readers:
+      Type: ImplicitMeta
+      Rule: "ANY Readers"
+    Writers:
+      Type: ImplicitMeta
+      Rule: "ANY Writers"
+    Admins:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Admins"
+  Capabilities:
+    <<: *ChannelCapabilities
+
+Profiles:
+  # Genesis block for orderers
+  GovernanceGenesis:
+    <<: *ChannelDefaults
+    Orderer:
+      <<: *OrdererDefaults
+      Organizations:
+        - *OrdererOrg
+      Capabilities:
+        <<: *OrdererCapabilities
+    Application:
+      <<: *ApplicationDefaults
+      Organizations:
+        - *StateOrg
+        - *DistrictOrg
+        - *AuditOrg
+      Capabilities:
+        <<: *ApplicationCapabilities
+
+  # Census channel configuration
+  CensusChannel:
+    Consortium: GovernanceConsortium
+    <<: *ChannelDefaults
+    Application:
+      <<: *ApplicationDefaults
+      Organizations:
+        - *StateOrg
+        - *DistrictOrg
+        - *AuditOrg
+      Capabilities:
+        <<: *ApplicationCapabilities

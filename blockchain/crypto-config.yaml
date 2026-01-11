@@ -1,0 +1,60 @@
+# Copyright Governance Portal. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+# Crypto-config for GovernanceNet
+# Generate with: cryptogen generate --config=./crypto-config.yaml
+
+OrdererOrgs:
+  - Name: Orderer
+    Domain: governance.com
+    EnableNodeOUs: true
+    Specs:
+      - Hostname: orderer
+        SANS:
+          - localhost
+          - 127.0.0.1
+      - Hostname: orderer2
+        SANS:
+          - localhost
+          - 127.0.0.1
+      - Hostname: orderer3
+        SANS:
+          - localhost
+          - 127.0.0.1
+
+PeerOrgs:
+  # StateGovOrg - Network governance, policy simulation
+  - Name: State
+    Domain: state.governance.com
+    EnableNodeOUs: true
+    Template:
+      Count: 2
+      SANS:
+        - localhost
+        - 127.0.0.1
+    Users:
+      Count: 2
+
+  # DistrictOrg - Census record submission, verification
+  - Name: District
+    Domain: district.governance.com
+    EnableNodeOUs: true
+    Template:
+      Count: 2
+      SANS:
+        - localhost
+        - 127.0.0.1
+    Users:
+      Count: 3
+
+  # AuditOrg - External auditors, AI monitoring
+  - Name: Audit
+    Domain: audit.governance.com
+    EnableNodeOUs: true
+    Template:
+      Count: 1
+      SANS:
+        - localhost
+        - 127.0.0.1
+    Users:
+      Count: 1

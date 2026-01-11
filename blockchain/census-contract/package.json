@@ -1,0 +1,19 @@
+{
+  "name": "census-contract",
+  "version": "1.0.0",
+  "description": "CensusContract chaincode for Governance Portal - stores census record hashes on Hyperledger Fabric",
+  "main": "index.js",
+  "engines": {
+    "node": ">=16"
+  },
+  "scripts": {
+    "start": "fabric-chaincode-node start",
+    "test": "node --check lib/censusContract.js && echo 'Syntax OK'"
+  },
+  "dependencies": {
+    "fabric-contract-api": "^2.5.0",
+    "fabric-shim": "^2.5.0"
+  },
+  "author": "Governance Portal",
+  "license": "MIT"
+}

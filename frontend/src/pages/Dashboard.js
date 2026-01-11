@@ -9,15 +9,28 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 function Dashboard() {
   const { user } = useOutletContext();
   const [analytics, setAnalytics] = useState(null);
+  const [blockchainStatus, setBlockchainStatus] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchAnalytics = async () => {
+    const fetchData = async () => {
       try {
-        const response = await axios.get(`${BACKEND_URL}/api/analytics/summary`, {
+        // Fetch analytics
+        const analyticsRes = await axios.get(`${BACKEND_URL}/api/analytics/summary`, {
           withCredentials: true
         });
-        setAnalytics(response.data);
+        setAnalytics(analyticsRes.data);
+
+        // Fetch blockchain status
+        try {
+          const blockchainRes = await axios.get(`${BACKEND_URL}/api/blockchain/status`, {
+            withCredentials: true
+          });
+          setBlockchainStatus(blockchainRes.data);
+        } catch (bcError) {
+          console.log('Blockchain service not available:', bcError.message);
+          setBlockchainStatus({ mode: 'offline', error: true });
+        }
       } catch (error) {
         console.error('Failed to fetch analytics:', error);
       } finally {
@@ -25,7 +38,7 @@ function Dashboard() {
       }
     };
 
-    fetchAnalytics();
+    fetchData();
   }, []);
 
   if (loading) {
@@ -162,8 +175,28 @@ function Dashboard() {
             </div>
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-600">Blockchain Status</span>
-              <span className="status-badge" style={{ backgroundColor: '#fef3c7', color: '#92400e' }}>Pending Integration</span>
+              {blockchainStatus?.error ? (
+                <span className="status-badge" style={{ backgroundColor: '#fee2e2', color: '#991b1b' }}>Offline</span>
+              ) : blockchainStatus?.mode === 'mock' ? (
+                <span className="status-badge" style={{ backgroundColor: '#dbeafe', color: '#1e40af' }}>Mock Mode</span>
+              ) : blockchainStatus?.mode === 'fabric' ? (
+                <span className="status-badge status-normal">Fabric Active</span>
+              ) : (
+                <span className="status-badge" style={{ backgroundColor: '#fef3c7', color: '#92400e' }}>Loading...</span>
+              )}
             </div>
+            {blockchainStatus && !blockchainStatus.error && (
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600">Ledger Records</span>
+                <span className="text-sm font-medium text-gray-900">{blockchainStatus.records_count || 0}</span>
+              </div>
+            )}
+            {blockchainStatus && !blockchainStatus.error && (
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600">Access Logs</span>
+                <span className="text-sm font-medium text-gray-900">{blockchainStatus.logs_count || 0}</span>
+              </div>
+            )}
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-600">ML Audit System</span>
               <span className="status-badge" style={{ backgroundColor: '#fef3c7', color: '#92400e' }}>Pending Integration</span>
