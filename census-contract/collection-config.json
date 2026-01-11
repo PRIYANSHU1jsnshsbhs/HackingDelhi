@@ -1,0 +1,26 @@
+[
+  {
+    "name": "stateDistrictCollection",
+    "policy": "OR('StateMSP.member', 'DistrictMSP.member')",
+    "requiredPeerCount": 1,
+    "maxPeerCount": 3,
+    "blockToLive": 0,
+    "memberOnlyRead": true,
+    "memberOnlyWrite": true,
+    "endorsementPolicy": {
+      "signaturePolicy": "OR('StateMSP.peer', 'DistrictMSP.peer')"
+    }
+  },
+  {
+    "name": "auditLogsCollection",
+    "policy": "OR('StateMSP.member', 'DistrictMSP.member', 'AuditMSP.member')",
+    "requiredPeerCount": 1,
+    "maxPeerCount": 5,
+    "blockToLive": 0,
+    "memberOnlyRead": true,
+    "memberOnlyWrite": false,
+    "endorsementPolicy": {
+      "signaturePolicy": "OR('StateMSP.peer', 'DistrictMSP.peer')"
+    }
+  }
+]

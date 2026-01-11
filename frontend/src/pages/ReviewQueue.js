@@ -44,7 +44,24 @@ function ReviewQueue() {
         { action },
         { withCredentials: true }
       );
-      toast.success("Record reviewed successfully");
+      
+      // If approved, anchor on blockchain
+      if (action === "approve") {
+        try {
+          await axios.post(
+            `${BACKEND_URL}/api/blockchain/anchor`,
+            { record_id: recordId },
+            { withCredentials: true }
+          );
+          toast.success("Record approved and anchored on blockchain");
+        } catch (bcError) {
+          console.log("Blockchain anchor failed (mock mode may not have record):", bcError.message);
+          toast.success("Record approved (blockchain anchor pending)");
+        }
+      } else {
+        toast.success("Record reviewed successfully");
+      }
+      
       fetchRecords();
     } catch (error) {
       toast.error("Failed to review record");

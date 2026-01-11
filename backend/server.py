@@ -14,6 +14,9 @@ import uuid
 from datetime import datetime, timezone, timedelta
 import httpx
 
+# Blockchain service
+from blockchain_service import blockchain_service, compute_record_hash
+
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
@@ -1278,13 +1281,233 @@ async def get_audit_logs(user: dict = Depends(get_current_user)):
     
     return sorted(logs, key=lambda x: x["timestamp"], reverse=True)[:100]
 
+# ========================================
+# Blockchain API Endpoints
+# ========================================
+
+class BlockchainAnchorRequest(BaseModel):
+    """Request to anchor a record on blockchain"""
+    record_id: str
+
+class BlockchainReviewRequest(BaseModel):
+    """Request to submit review to blockchain"""
+    record_id: str
+    decision: str  # APPROVED, REJECTED, NEEDS_VERIFICATION, PRIORITY
+
+class BlockchainVerifyRequest(BaseModel):
+    """Request to verify record integrity"""
+    record_id: str
+
+class BlockchainAccessLogRequest(BaseModel):
+    """Request to log access"""
+    record_id: str
+    reason: str
+
+
+@api_router.get("/blockchain/status")
+async def get_blockchain_status(user: dict = Depends(get_current_user)):
+    """Get blockchain service status"""
+    status = await blockchain_service.get_ledger_status()
+    return status
+
+
+@api_router.post("/blockchain/anchor")
+async def anchor_record_on_blockchain(
+    request: BlockchainAnchorRequest,
+    user: dict = Depends(get_current_user)
+):
+    """
+    Anchor a census record on the blockchain.
+    Computes hash and stores on ledger for tamper-proof tracking.
+    """
+    # Get record from in-memory or demo data
+    record = in_memory_db["census_records"].get(request.record_id)
+    if not record and request.record_id in DEMO_DATA_BY_ID:
+        record = DEMO_DATA_BY_ID[request.record_id]
+    
+    if not record:
+        raise HTTPException(status_code=404, detail=f"Record {request.record_id} not found")
+    
+    try:
+        result = await blockchain_service.anchor_record(
+            record=record,
+            user_id=user["user_id"]
+        )
+        
+        # Log audit entry
+        audit_entry = {
+            "audit_id": f"audit_{uuid.uuid4().hex[:12]}",
+            "user_id": user["user_id"],
+            "user_name": user["name"],
+            "action": f"Anchored record {request.record_id} on blockchain",
+            "details": {"tx_id": result["tx_id"], "data_hash": result["data_hash"]},
+            "timestamp": datetime.now(timezone.utc)
+        }
+        in_memory_db["audit_logs"].append(audit_entry)
+        
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@api_router.post("/blockchain/review")
+async def submit_blockchain_review(
+    request: BlockchainReviewRequest,
+    user: dict = Depends(get_current_user)
+):
+    """
+    Submit a review decision to the blockchain.
+    Updates the on-chain status of the record.
+    """
+    if user["role"] not in ["supervisor", "district_admin"]:
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
+    
+    # Get current record to compute new hash if needed
+    record = in_memory_db["census_records"].get(request.record_id)
+    if not record and request.record_id in DEMO_DATA_BY_ID:
+        record = DEMO_DATA_BY_ID[request.record_id]
+    
+    try:
+        result = await blockchain_service.review_record(
+            record_id=request.record_id,
+            reviewer_id=user["user_id"],
+            decision=request.decision,
+            updated_record=record
+        )
+        
+        # Log audit entry
+        audit_entry = {
+            "audit_id": f"audit_{uuid.uuid4().hex[:12]}",
+            "user_id": user["user_id"],
+            "user_name": user["name"],
+            "action": f"Submitted blockchain review for {request.record_id}",
+            "details": {"tx_id": result["tx_id"], "decision": request.decision},
+            "timestamp": datetime.now(timezone.utc)
+        }
+        in_memory_db["audit_logs"].append(audit_entry)
+        
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@api_router.post("/blockchain/verify")
+async def verify_record_integrity(
+    request: BlockchainVerifyRequest,
+    user: dict = Depends(get_current_user)
+):
+    """
+    Verify that a record's data hasn't been tampered with.
+    Compares current data hash against on-chain hash.
+    """
+    # Get current record
+    record = in_memory_db["census_records"].get(request.record_id)
+    if not record and request.record_id in DEMO_DATA_BY_ID:
+        record = DEMO_DATA_BY_ID[request.record_id]
+    
+    if not record:
+        raise HTTPException(status_code=404, detail=f"Record {request.record_id} not found")
+    
+    result = await blockchain_service.verify_integrity(
+        record_id=request.record_id,
+        record=record,
+        accessor_id=user["user_id"]
+    )
+    
+    return result
+
+
+@api_router.post("/blockchain/log-access")
+async def log_record_access(
+    request: BlockchainAccessLogRequest,
+    user: dict = Depends(get_current_user)
+):
+    """
+    Log access to a record on the blockchain for audit purposes.
+    Creates an immutable access log entry.
+    """
+    result = await blockchain_service.log_access(
+        record_id=request.record_id,
+        accessor_id=user["user_id"],
+        reason=request.reason
+    )
+    return result
+
+
+@api_router.get("/blockchain/record/{record_id}")
+async def get_blockchain_record(
+    record_id: str,
+    user: dict = Depends(get_current_user)
+):
+    """
+    Get a record's blockchain ledger entry.
+    Returns the on-chain data (hash, status, etc.).
+    """
+    result = await blockchain_service.get_ledger_record(record_id)
+    if not result:
+        raise HTTPException(status_code=404, detail=f"Record {record_id} not found on ledger")
+    return result
+
+
+@api_router.get("/blockchain/access-logs/{record_id}")
+async def get_blockchain_access_logs(
+    record_id: str,
+    user: dict = Depends(get_current_user)
+):
+    """
+    Get all access logs for a record from blockchain.
+    Returns immutable audit trail of who accessed the record.
+    """
+    if user["role"] not in ["supervisor", "district_admin", "state_analyst"]:
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
+    
+    logs = await blockchain_service.get_access_logs(record_id)
+    return {"record_id": record_id, "access_logs": logs}
+
+
 @api_router.get("/integrity/status/{record_id}")
 async def get_integrity_status(record_id: str, user: dict = Depends(get_current_user)):
+    """
+    Get integrity status of a record.
+    Checks if record is anchored and verifies hash.
+    """
+    # Check if anchored
+    ledger_record = await blockchain_service.get_ledger_record(record_id)
+    
+    if not ledger_record:
+        return {
+            "record_id": record_id,
+            "status": "not_anchored",
+            "message": "Record not yet anchored on blockchain",
+            "ledger_anchored": False
+        }
+    
+    # Get current record and verify
+    record = in_memory_db["census_records"].get(record_id)
+    if not record and record_id in DEMO_DATA_BY_ID:
+        record = DEMO_DATA_BY_ID[record_id]
+    
+    if record:
+        current_hash = compute_record_hash(record)
+        is_valid = current_hash == ledger_record["data_hash"]
+        
+        return {
+            "record_id": record_id,
+            "status": "verified" if is_valid else "tampered",
+            "message": "Data integrity verified" if is_valid else "WARNING: Data may have been modified",
+            "ledger_anchored": True,
+            "on_chain_hash": ledger_record["data_hash"],
+            "current_hash": current_hash,
+            "blockchain_status": ledger_record["current_status"],
+            "last_updated": ledger_record["last_updated_at"]
+        }
+    
     return {
         "record_id": record_id,
-        "status": "pending",
-        "message": "Blockchain integration placeholder",
-        "ledger_anchored": False
+        "status": "anchored",
+        "message": "Record anchored but not found in database",
+        "ledger_anchored": True,
+        "on_chain_hash": ledger_record["data_hash"]
     }
 
 @api_router.get("/ml/audit-signals/{record_id}")

@@ -1,0 +1,418 @@
+# Copyright Governance Portal. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+# Docker Compose for GovernanceNet
+# 3 Orderers (Raft), 5 Peers (2 State, 2 District, 1 Audit), CouchDB
+
+version: "3.7"
+
+networks:
+  governance_net:
+    name: governance_net
+
+volumes:
+  orderer.governance.com:
+  orderer2.governance.com:
+  orderer3.governance.com:
+  peer0.state.governance.com:
+  peer1.state.governance.com:
+  peer0.district.governance.com:
+  peer1.district.governance.com:
+  peer0.audit.governance.com:
+
+
+services:
+  # ==================== ORDERERS ====================
+  orderer.governance.com:
+    container_name: orderer.governance.com
+    image: hyperledger/fabric-orderer:2.5.0
+    environment:
+      - FABRIC_LOGGING_SPEC=INFO
+      - ORDERER_GENERAL_LISTENADDRESS=0.0.0.0
+      - ORDERER_GENERAL_LISTENPORT=7050
+      - ORDERER_GENERAL_LOCALMSPID=OrdererMSP
+      - ORDERER_GENERAL_LOCALMSPDIR=/var/hyperledger/orderer/msp
+      - ORDERER_GENERAL_TLS_ENABLED=true
+      - ORDERER_GENERAL_TLS_PRIVATEKEY=/var/hyperledger/orderer/tls/server.key
+      - ORDERER_GENERAL_TLS_CERTIFICATE=/var/hyperledger/orderer/tls/server.crt
+      - ORDERER_GENERAL_TLS_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      - ORDERER_GENERAL_CLUSTER_CLIENTCERTIFICATE=/var/hyperledger/orderer/tls/server.crt
+      - ORDERER_GENERAL_CLUSTER_CLIENTPRIVATEKEY=/var/hyperledger/orderer/tls/server.key
+      - ORDERER_GENERAL_CLUSTER_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      - ORDERER_GENERAL_BOOTSTRAPMETHOD=none
+      - ORDERER_CHANNELPARTICIPATION_ENABLED=true
+      - ORDERER_ADMIN_TLS_ENABLED=true
+      - ORDERER_ADMIN_TLS_CERTIFICATE=/var/hyperledger/orderer/tls/server.crt
+      - ORDERER_ADMIN_TLS_PRIVATEKEY=/var/hyperledger/orderer/tls/server.key
+      - ORDERER_ADMIN_TLS_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      - ORDERER_ADMIN_TLS_CLIENTROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      - ORDERER_ADMIN_LISTENADDRESS=0.0.0.0:7053
+      - ORDERER_METRICS_PROVIDER=prometheus
+      - ORDERER_OPERATIONS_LISTENADDRESS=0.0.0.0:8443
+    working_dir: /root
+    command: orderer
+    volumes:
+      - ./crypto-config/ordererOrganizations/governance.com/orderers/orderer.governance.com/msp:/var/hyperledger/orderer/msp
+      - ./crypto-config/ordererOrganizations/governance.com/orderers/orderer.governance.com/tls:/var/hyperledger/orderer/tls
+      - orderer.governance.com:/var/hyperledger/production/orderer
+    ports:
+      - 12050:7050
+      - 12053:7053
+      - 12443:8443
+    networks:
+      - governance_net
+
+  orderer2.governance.com:
+    container_name: orderer2.governance.com
+    image: hyperledger/fabric-orderer:2.5.0
+    environment:
+      - FABRIC_LOGGING_SPEC=INFO
+      - ORDERER_GENERAL_LISTENADDRESS=0.0.0.0
+      - ORDERER_GENERAL_LISTENPORT=7050
+      - ORDERER_GENERAL_LOCALMSPID=OrdererMSP
+      - ORDERER_GENERAL_LOCALMSPDIR=/var/hyperledger/orderer/msp
+      - ORDERER_GENERAL_TLS_ENABLED=true
+      - ORDERER_GENERAL_TLS_PRIVATEKEY=/var/hyperledger/orderer/tls/server.key
+      - ORDERER_GENERAL_TLS_CERTIFICATE=/var/hyperledger/orderer/tls/server.crt
+      - ORDERER_GENERAL_TLS_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      - ORDERER_GENERAL_CLUSTER_CLIENTCERTIFICATE=/var/hyperledger/orderer/tls/server.crt
+      - ORDERER_GENERAL_CLUSTER_CLIENTPRIVATEKEY=/var/hyperledger/orderer/tls/server.key
+      - ORDERER_GENERAL_CLUSTER_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      - ORDERER_GENERAL_BOOTSTRAPMETHOD=none
+      - ORDERER_CHANNELPARTICIPATION_ENABLED=true
+      - ORDERER_ADMIN_TLS_ENABLED=true
+      - ORDERER_ADMIN_TLS_CERTIFICATE=/var/hyperledger/orderer/tls/server.crt
+      - ORDERER_ADMIN_TLS_PRIVATEKEY=/var/hyperledger/orderer/tls/server.key
+      - ORDERER_ADMIN_TLS_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      - ORDERER_ADMIN_TLS_CLIENTROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      - ORDERER_ADMIN_LISTENADDRESS=0.0.0.0:8053
+      - ORDERER_METRICS_PROVIDER=prometheus
+      - ORDERER_OPERATIONS_LISTENADDRESS=0.0.0.0:8444
+    working_dir: /root
+    command: orderer
+    volumes:
+      - ./crypto-config/ordererOrganizations/governance.com/orderers/orderer2.governance.com/msp:/var/hyperledger/orderer/msp
+      - ./crypto-config/ordererOrganizations/governance.com/orderers/orderer2.governance.com/tls:/var/hyperledger/orderer/tls
+      - orderer2.governance.com:/var/hyperledger/production/orderer
+    ports:
+      - 12051:7050
+      - 12054:8053
+      - 12444:8444
+    networks:
+      - governance_net
+
+  orderer3.governance.com:
+    container_name: orderer3.governance.com
+    image: hyperledger/fabric-orderer:2.5.0
+    environment:
+      - FABRIC_LOGGING_SPEC=INFO
+      - ORDERER_GENERAL_LISTENADDRESS=0.0.0.0
+      - ORDERER_GENERAL_LISTENPORT=7050
+      - ORDERER_GENERAL_LOCALMSPID=OrdererMSP
+      - ORDERER_GENERAL_LOCALMSPDIR=/var/hyperledger/orderer/msp
+      - ORDERER_GENERAL_TLS_ENABLED=true
+      - ORDERER_GENERAL_TLS_PRIVATEKEY=/var/hyperledger/orderer/tls/server.key
+      - ORDERER_GENERAL_TLS_CERTIFICATE=/var/hyperledger/orderer/tls/server.crt
+      - ORDERER_GENERAL_TLS_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      - ORDERER_GENERAL_CLUSTER_CLIENTCERTIFICATE=/var/hyperledger/orderer/tls/server.crt
+      - ORDERER_GENERAL_CLUSTER_CLIENTPRIVATEKEY=/var/hyperledger/orderer/tls/server.key
+      - ORDERER_GENERAL_CLUSTER_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      - ORDERER_GENERAL_BOOTSTRAPMETHOD=none
+      - ORDERER_CHANNELPARTICIPATION_ENABLED=true
+      - ORDERER_ADMIN_TLS_ENABLED=true
+      - ORDERER_ADMIN_TLS_CERTIFICATE=/var/hyperledger/orderer/tls/server.crt
+      - ORDERER_ADMIN_TLS_PRIVATEKEY=/var/hyperledger/orderer/tls/server.key
+      - ORDERER_ADMIN_TLS_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      - ORDERER_ADMIN_TLS_CLIENTROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      - ORDERER_ADMIN_LISTENADDRESS=0.0.0.0:9053
+      - ORDERER_METRICS_PROVIDER=prometheus
+      - ORDERER_OPERATIONS_LISTENADDRESS=0.0.0.0:8445
+    working_dir: /root
+    command: orderer
+    volumes:
+      - ./crypto-config/ordererOrganizations/governance.com/orderers/orderer3.governance.com/msp:/var/hyperledger/orderer/msp
+      - ./crypto-config/ordererOrganizations/governance.com/orderers/orderer3.governance.com/tls:/var/hyperledger/orderer/tls
+      - orderer3.governance.com:/var/hyperledger/production/orderer
+    ports:
+      - 12052:7050
+      - 12055:9053
+      - 12445:8445
+    networks:
+      - governance_net
+
+  # ==================== COUCHDB ====================
+  couchdb.state0:
+    container_name: couchdb.state0
+    image: couchdb:3.3.2
+    environment:
+      - COUCHDB_USER=admin
+      - COUCHDB_PASSWORD=adminpw
+    ports:
+      - 15984:5984
+    networks:
+      - governance_net
+
+  couchdb.state1:
+    container_name: couchdb.state1
+    image: couchdb:3.3.2
+    environment:
+      - COUCHDB_USER=admin
+      - COUCHDB_PASSWORD=adminpw
+    ports:
+      - 15985:5984
+    networks:
+      - governance_net
+
+  couchdb.district0:
+    container_name: couchdb.district0
+    image: couchdb:3.3.2
+    environment:
+      - COUCHDB_USER=admin
+      - COUCHDB_PASSWORD=adminpw
+    ports:
+      - 16984:5984
+    networks:
+      - governance_net
+
+  couchdb.district1:
+    container_name: couchdb.district1
+    image: couchdb:3.3.2
+    environment:
+      - COUCHDB_USER=admin
+      - COUCHDB_PASSWORD=adminpw
+    ports:
+      - 16985:5984
+    networks:
+      - governance_net
+
+  couchdb.audit0:
+    container_name: couchdb.audit0
+    image: couchdb:3.3.2
+    environment:
+      - COUCHDB_USER=admin
+      - COUCHDB_PASSWORD=adminpw
+    ports:
+      - 17984:5984
+    networks:
+      - governance_net
+
+  # ==================== STATE PEERS ====================
+  peer0.state.governance.com:
+    container_name: peer0.state.governance.com
+    image: hyperledger/fabric-peer:2.5.0
+    environment:
+      - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=governance_net
+      - FABRIC_LOGGING_SPEC=INFO
+      - CORE_PEER_ID=peer0.state.governance.com
+      - CORE_PEER_ADDRESS=peer0.state.governance.com:7051
+      - CORE_PEER_LISTENADDRESS=0.0.0.0:7051
+      - CORE_PEER_CHAINCODEADDRESS=peer0.state.governance.com:7052
+      - CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:7052
+      - CORE_PEER_GOSSIP_BOOTSTRAP=peer1.state.governance.com:7151
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer0.state.governance.com:7051
+      - CORE_PEER_LOCALMSPID=StateMSP
+      - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/fabric/msp
+      - CORE_PEER_TLS_ENABLED=true
+      - CORE_PEER_TLS_CERT_FILE=/etc/hyperledger/fabric/tls/server.crt
+      - CORE_PEER_TLS_KEY_FILE=/etc/hyperledger/fabric/tls/server.key
+      - CORE_PEER_TLS_ROOTCERT_FILE=/etc/hyperledger/fabric/tls/ca.crt
+      - CORE_LEDGER_STATE_STATEDATABASE=CouchDB
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=couchdb.state0:5984
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME=admin
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_PASSWORD=adminpw
+      - CORE_METRICS_PROVIDER=prometheus
+    working_dir: /opt/gopath/src/github.com/hyperledger/fabric/peer
+    command: peer node start
+    volumes:
+      - /var/run/:/host/var/run/
+      - ./crypto-config/peerOrganizations/state.governance.com/peers/peer0.state.governance.com:/etc/hyperledger/fabric
+      - peer0.state.governance.com:/var/hyperledger/production
+    ports:
+      - 13051:7051
+    depends_on:
+      - couchdb.state0
+    networks:
+      - governance_net
+
+  peer1.state.governance.com:
+    container_name: peer1.state.governance.com
+    image: hyperledger/fabric-peer:2.5.0
+    environment:
+      - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=governance_net
+      - FABRIC_LOGGING_SPEC=INFO
+      - CORE_PEER_ID=peer1.state.governance.com
+      - CORE_PEER_ADDRESS=peer1.state.governance.com:7151
+      - CORE_PEER_LISTENADDRESS=0.0.0.0:7151
+      - CORE_PEER_CHAINCODEADDRESS=peer1.state.governance.com:7152
+      - CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:7152
+      - CORE_PEER_GOSSIP_BOOTSTRAP=peer0.state.governance.com:7051
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer1.state.governance.com:7151
+      - CORE_PEER_LOCALMSPID=StateMSP
+      - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/fabric/msp
+      - CORE_PEER_TLS_ENABLED=true
+      - CORE_PEER_TLS_CERT_FILE=/etc/hyperledger/fabric/tls/server.crt
+      - CORE_PEER_TLS_KEY_FILE=/etc/hyperledger/fabric/tls/server.key
+      - CORE_PEER_TLS_ROOTCERT_FILE=/etc/hyperledger/fabric/tls/ca.crt
+      - CORE_LEDGER_STATE_STATEDATABASE=CouchDB
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=couchdb.state1:5984
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME=admin
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_PASSWORD=adminpw
+    working_dir: /opt/gopath/src/github.com/hyperledger/fabric/peer
+    command: peer node start
+    volumes:
+      - /var/run/:/host/var/run/
+      - ./crypto-config/peerOrganizations/state.governance.com/peers/peer1.state.governance.com:/etc/hyperledger/fabric
+      - peer1.state.governance.com:/var/hyperledger/production
+    ports:
+      - 13151:7151
+    depends_on:
+      - couchdb.state1
+    networks:
+      - governance_net
+
+  # ==================== DISTRICT PEERS ====================
+  peer0.district.governance.com:
+    container_name: peer0.district.governance.com
+    image: hyperledger/fabric-peer:2.5.0
+    environment:
+      - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=governance_net
+      - FABRIC_LOGGING_SPEC=INFO
+      - CORE_PEER_ID=peer0.district.governance.com
+      - CORE_PEER_ADDRESS=peer0.district.governance.com:9051
+      - CORE_PEER_LISTENADDRESS=0.0.0.0:9051
+      - CORE_PEER_CHAINCODEADDRESS=peer0.district.governance.com:9052
+      - CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:9052
+      - CORE_PEER_GOSSIP_BOOTSTRAP=peer1.district.governance.com:9151
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer0.district.governance.com:9051
+      - CORE_PEER_LOCALMSPID=DistrictMSP
+      - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/fabric/msp
+      - CORE_PEER_TLS_ENABLED=true
+      - CORE_PEER_TLS_CERT_FILE=/etc/hyperledger/fabric/tls/server.crt
+      - CORE_PEER_TLS_KEY_FILE=/etc/hyperledger/fabric/tls/server.key
+      - CORE_PEER_TLS_ROOTCERT_FILE=/etc/hyperledger/fabric/tls/ca.crt
+      - CORE_LEDGER_STATE_STATEDATABASE=CouchDB
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=couchdb.district0:5984
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME=admin
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_PASSWORD=adminpw
+    working_dir: /opt/gopath/src/github.com/hyperledger/fabric/peer
+    command: peer node start
+    volumes:
+      - /var/run/:/host/var/run/
+      - ./crypto-config/peerOrganizations/district.governance.com/peers/peer0.district.governance.com:/etc/hyperledger/fabric
+      - peer0.district.governance.com:/var/hyperledger/production
+    ports:
+      - 14051:9051
+    depends_on:
+      - couchdb.district0
+    networks:
+      - governance_net
+
+  peer1.district.governance.com:
+    container_name: peer1.district.governance.com
+    image: hyperledger/fabric-peer:2.5.0
+    environment:
+      - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=governance_net
+      - FABRIC_LOGGING_SPEC=INFO
+      - CORE_PEER_ID=peer1.district.governance.com
+      - CORE_PEER_ADDRESS=peer1.district.governance.com:9151
+      - CORE_PEER_LISTENADDRESS=0.0.0.0:9151
+      - CORE_PEER_CHAINCODEADDRESS=peer1.district.governance.com:9152
+      - CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:9152
+      - CORE_PEER_GOSSIP_BOOTSTRAP=peer0.district.governance.com:9051
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer1.district.governance.com:9151
+      - CORE_PEER_LOCALMSPID=DistrictMSP
+      - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/fabric/msp
+      - CORE_PEER_TLS_ENABLED=true
+      - CORE_PEER_TLS_CERT_FILE=/etc/hyperledger/fabric/tls/server.crt
+      - CORE_PEER_TLS_KEY_FILE=/etc/hyperledger/fabric/tls/server.key
+      - CORE_PEER_TLS_ROOTCERT_FILE=/etc/hyperledger/fabric/tls/ca.crt
+      - CORE_LEDGER_STATE_STATEDATABASE=CouchDB
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=couchdb.district1:5984
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME=admin
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_PASSWORD=adminpw
+    working_dir: /opt/gopath/src/github.com/hyperledger/fabric/peer
+    command: peer node start
+    volumes:
+      - /var/run/:/host/var/run/
+      - ./crypto-config/peerOrganizations/district.governance.com/peers/peer1.district.governance.com:/etc/hyperledger/fabric
+      - peer1.district.governance.com:/var/hyperledger/production
+    ports:
+      - 14151:9151
+    depends_on:
+      - couchdb.district1
+    networks:
+      - governance_net
+
+  # ==================== AUDIT PEER ====================
+  peer0.audit.governance.com:
+    container_name: peer0.audit.governance.com
+    image: hyperledger/fabric-peer:2.5.0
+    environment:
+      - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=governance_net
+      - FABRIC_LOGGING_SPEC=INFO
+      - CORE_PEER_ID=peer0.audit.governance.com
+      - CORE_PEER_ADDRESS=peer0.audit.governance.com:11051
+      - CORE_PEER_LISTENADDRESS=0.0.0.0:11051
+      - CORE_PEER_CHAINCODEADDRESS=peer0.audit.governance.com:11052
+      - CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:11052
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer0.audit.governance.com:11051
+      - CORE_PEER_LOCALMSPID=AuditMSP
+      - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/fabric/msp
+      - CORE_PEER_TLS_ENABLED=true
+      - CORE_PEER_TLS_CERT_FILE=/etc/hyperledger/fabric/tls/server.crt
+      - CORE_PEER_TLS_KEY_FILE=/etc/hyperledger/fabric/tls/server.key
+      - CORE_PEER_TLS_ROOTCERT_FILE=/etc/hyperledger/fabric/tls/ca.crt
+      - CORE_LEDGER_STATE_STATEDATABASE=CouchDB
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=couchdb.audit0:5984
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME=admin
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_PASSWORD=adminpw
+    working_dir: /opt/gopath/src/github.com/hyperledger/fabric/peer
+    command: peer node start
+    volumes:
+      - /var/run/:/host/var/run/
+      - ./crypto-config/peerOrganizations/audit.governance.com/peers/peer0.audit.governance.com:/etc/hyperledger/fabric
+      - peer0.audit.governance.com:/var/hyperledger/production
+    ports:
+      - 15051:11051
+    depends_on:
+      - couchdb.audit0
+    networks:
+      - governance_net
+
+  # ==================== CLI ====================
+  cli:
+    container_name: cli
+    image: hyperledger/fabric-tools:2.5.0
+    tty: true
+    stdin_open: true
+    environment:
+      - GOPATH=/opt/gopath
+      - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+      - FABRIC_LOGGING_SPEC=INFO
+      - CORE_PEER_ID=cli
+      - CORE_PEER_ADDRESS=peer0.state.governance.com:7051
+      - CORE_PEER_LOCALMSPID=StateMSP
+      - CORE_PEER_TLS_ENABLED=true
+      - CORE_PEER_TLS_CERT_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/state.governance.com/peers/peer0.state.governance.com/tls/server.crt
+      - CORE_PEER_TLS_KEY_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/state.governance.com/peers/peer0.state.governance.com/tls/server.key
+      - CORE_PEER_TLS_ROOTCERT_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/state.governance.com/peers/peer0.state.governance.com/tls/ca.crt
+      - CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/state.governance.com/users/Admin@state.governance.com/msp
+    working_dir: /opt/gopath/src/github.com/hyperledger/fabric/peer
+    command: /bin/bash
+    volumes:
+      - /var/run/:/host/var/run/
+      - ./crypto-config:/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto
+      - ./channel-artifacts:/opt/gopath/src/github.com/hyperledger/fabric/peer/channel-artifacts
+      - ../census-contract:/opt/gopath/src/github.com/hyperledger/fabric/peer/chaincode/census-contract
+      - ./scripts:/opt/gopath/src/github.com/hyperledger/fabric/peer/scripts
+    depends_on:
+      - peer0.state.governance.com
+      - peer0.district.governance.com
+      - peer0.audit.governance.com
+    networks:
+      - governance_net
