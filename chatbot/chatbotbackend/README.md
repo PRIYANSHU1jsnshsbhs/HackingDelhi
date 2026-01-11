@@ -33,18 +33,36 @@ Production-grade AI chatbot with RAG architecture for census governance platform
 
 ## Installation
 
-1. **Install dependencies**:
+### Prerequisites
+- **Python 3.12** (recommended) — Python 3.14 lacks prebuilt wheels for some dependencies
+- pip (latest version)
+
+### Setup
+
+1. **Create a Python 3.12 virtual environment**:
+```powershell
+cd C:\Users\ASUS\OneDrive\Desktop\HACK4DELHI\V3\app\chatbot\chatbotbackend
+py -3.12 -m venv .venv312
+```
+
+2. **Activate the virtual environment**:
+```powershell
+.\.venv312\Scripts\Activate.ps1
+```
+
+3. **Upgrade pip and install dependencies**:
 ```bash
+python -m pip install -U pip setuptools wheel
 pip install -r requirements.txt
 ```
 
-2. **Set up environment**:
+4. **Set up environment variables**:
 ```bash
 cp .env.example .env
 # Edit .env and add your GEMINI_API_KEY
 ```
 
-3. **Get Gemini API Key**:
+5. **Get Gemini API Key**:
    - Visit: https://makersuite.google.com/app/apikey
    - Create a new API key
    - Add to `.env` file
@@ -52,8 +70,10 @@ cp .env.example .env
 ## Usage
 
 ### Start the server:
-```bash
-python server.py
+```powershell
+cd C:\Users\ASUS\OneDrive\Desktop\HACK4DELHI\V3\app\chatbot\chatbotbackend
+.\.venv312\Scripts\Activate.ps1
+python -m uvicorn server:app --reload --port 8001
 ```
 
 Server runs at: `http://localhost:8001`
@@ -181,4 +201,29 @@ console.log(data.response); // Display to user
 
 **Issue**: Empty responses
 - **Solution**: Check if knowledge base is indexed (see startup logs)
+
+**Issue**: `chroma-hnswlib` or `numpy` build errors (requires C++ compiler)
+- **Solution**: Use Python 3.12 (not 3.14) and ensure `chromadb>=1.0.0` in requirements.txt. Newer chromadb versions ship prebuilt Windows wheels.
+
+**Issue**: `Microsoft Visual C++ 14.0 or greater is required`
+- **Solution**: Upgrade to `chromadb>=1.0.0` which includes prebuilt wheels, or install [Microsoft C++ Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/)
+
+## Quick Start (TL;DR)
+
+```powershell
+# One-time setup
+cd C:\Users\ASUS\OneDrive\Desktop\HACK4DELHI\V3\app\chatbot\chatbotbackend
+py -3.12 -m venv .venv312
+.\.venv312\Scripts\Activate.ps1
+pip install -U pip setuptools wheel
+pip install -r requirements.txt
+
+# Run server (every time)
+cd C:\Users\ASUS\OneDrive\Desktop\HACK4DELHI\V3\app\chatbot\chatbotbackend
+.\.venv312\Scripts\Activate.ps1
+python -m uvicorn server:app --reload --port 8001
+```
+
+Server: http://127.0.0.1:8001  
+API Docs: http://127.0.0.1:8001/docs
 

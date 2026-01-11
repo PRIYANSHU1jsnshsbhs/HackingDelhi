@@ -1,0 +1,76 @@
+🔧 Backend API Endpoints
+Authentication:
+
+POST /api/auth/session - OAuth session creation
+POST /api/auth/dev-login - Development login
+GET /api/auth/me - Get current user
+POST /api/auth/logout - Logout
+PUT /api/auth/role - Change user role
+Census Records:
+
+GET /api/census/records - List records (with optional flag_status filter)
+GET /api/census/records/{record_id} - Get single record
+PUT /api/census/records/{record_id}/review - Approve/request verification
+GET /api/census/household/{household_id} - Get household members
+Analytics:
+
+GET /api/analytics/summary - Aggregate stats
+GET /api/analytics/states - State-wise analytics for map
+Policy:
+
+POST /api/policy/simulate - Run eligibility simulation
+Audit:
+
+GET /api/audit/logs - Get audit logs
+Placeholders (Future):
+
+GET /api/integrity/status/{record_id} - Blockchain integrity
+GET /api/ml/audit-signals/{record_id} - ML audit signals
+💾 Data Storage
+Main Backend (server.py):
+
+Primary: MongoDB (if MONGO_URL configured)
+Fallback: In-memory dictionaries (in_memory_db)
+Generates 50 mock census records on first load if empty
+Mobile Backend (mobile-app/backend/server.py):
+
+MongoDB only - stores citizen surveys submitted from mobile
+📱 Mobile App (Expo React Native)
+Screens:
+
+index.tsx
+ - Home
+home.tsx
+ - Main dashboard
+identity-scan.tsx
+ - ID scanning
+ai-verification.tsx
+ - AI-powered verification
+declaration.tsx
+ - Declaration form
+blockchain-receipt.tsx
+ - Blockchain transaction receipt
+sync-queue.tsx
+ - Offline sync queue
+Mobile → Web Flow:
+
+Field worker collects citizen data on mobile
+Data includes AI verification + blockchain receipt
+Syncs to mobile backend → MongoDB
+Web portal fetches from MongoDB (
+citizen_surveys
+ collection)
+Records appear in Review Queue for approval
+🗺️ Key Components
+InteractiveIndiaMap.js - SVG-based India map with:
+State-wise data visualization
+Multiple metrics (population, review %, priority %, income)
+Hover tooltips with detailed stats
+Layout.js - Main app layout with:
+Sticky header with role switcher
+Responsive sidebar navigation
+Dynamic menu based on user role
+ProtectedRoute.js - Auth guard that:
+Checks session via /api/auth/me
+Redirects to login if unauthorized
+Passes user context to child routes

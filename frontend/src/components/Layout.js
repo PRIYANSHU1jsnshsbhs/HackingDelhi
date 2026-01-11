@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Outlet, useOutletContext, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import ChatbotWidget from './ChatbotWidget';
+import MagnifyingGlass from './MagnifyingGlass';
 import {
   Select,
   SelectContent,

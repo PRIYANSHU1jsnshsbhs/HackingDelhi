@@ -23,10 +23,24 @@ DEMO_DATA_BY_HOUSEHOLD = {}
 DEMO_DATA_BY_ID = {}
 
 def load_demo_census_data():
-    """Load census data from testdata/output.json file"""
+    """Load census data from testdata/4_7.json file"""
     global DEMO_CENSUS_DATA, DEMO_DATA_BY_HOUSEHOLD, DEMO_DATA_BY_ID
     
-    data_file = ROOT_DIR.parent / 'testdata' / 'output.json'
+    # Helper to safely convert to int (handles float strings like '18.0')
+    def safe_int(val, default=0):
+        try:
+            return int(float(val)) if val else default
+        except (ValueError, TypeError):
+            return default
+    
+    # Helper to safely convert to float
+    def safe_float(val, default=0.0):
+        try:
+            return float(val) if val else default
+        except (ValueError, TypeError):
+            return default
+    
+    data_file = ROOT_DIR.parent / 'testdata' / '4_7.json'
     if not data_file.exists():
         logging.warning(f"Demo data file not found: {data_file}")
         return []
@@ -35,8 +49,8 @@ def load_demo_census_data():
         with open(data_file, 'r', encoding='utf-8') as f:
             raw_data = json.load(f)
         
-        # Load all 100000 records
-        raw_data = raw_data[:100000]
+        # Load all records (or limit if needed)
+        raw_data = raw_data[:100000] if len(raw_data) > 100000 else raw_data
         
         # Indian first and last names for generating realistic names
         first_names_male = ["Rajesh", "Amit", "Vikram", "Suresh", "Ramesh", "Anil", "Vijay", "Sanjay", "Deepak", "Manoj", "Ravi", "Sunil", "Ashok", "Rakesh", "Pankaj"]
@@ -65,8 +79,8 @@ def load_demo_census_data():
             name = f"{first_name} {last_name}"
             
             # Determine flag status based on scheme_leakage_flag and exclusion_error_risk_score
-            leakage = int(item.get('scheme_leakage_flag', 0))
-            risk_score = float(item.get('exclusion_error_risk_score', 0))
+            leakage = safe_int(item.get('scheme_leakage_flag', 0))
+            risk_score = safe_float(item.get('exclusion_error_risk_score', 0))
             
             if leakage == 1 and risk_score > 0.7:
                 flag_status = 'priority'
@@ -92,34 +106,36 @@ def load_demo_census_data():
                 "record_id": item.get('individual_id'),
                 "household_id": item.get('household_id'),
                 "name": name,
-                "age": int(item.get('age', 0)),
+                "age": safe_int(item.get('age', 0)),
                 "sex": sex,
                 "relation": relation,
-                "caste": item.get('caste_category', 'General'),
-                "income": int(item.get('monthly_income', 0)),
+                "caste": item.get('social_category', 'General'),
+                "income": safe_int(item.get('monthly_income', 0)),
                 "region": item.get('urban_rural', 'Rural'),
-                "district": f"District-{item.get('pin_code', '000000')[:3]}",
+                "district": f"District-{str(item.get('pin_code', '000000'))[:3]}",
                 "state": item.get('state', 'Unknown'),
                 "pin_code": item.get('pin_code'),
+                "latitude": item.get('latitude'),
+                "longitude": item.get('longitude'),
                 "flag_status": flag_status,
                 "flag_source": flag_source,
                 "reviewed": False,
                 "created_at": item.get('timestamp', datetime.now(timezone.utc).isoformat()),
-                # New fields from output.json
-                "welfare_score": float(item.get('welfare_score', 0)),
+                # New fields from 4_7.json
+                "welfare_score": safe_float(item.get('welfare_score', 0)),
                 "ration_card_type": item.get('ration_card_type', 'BPL'),
-                "scheme_enrollment_count": int(item.get('scheme_enrollment_count', 0)),
+                "scheme_enrollment_count": safe_int(item.get('scheme_enrollment_count', 0)),
                 "scheme_leakage_flag": leakage,
                 "exclusion_error_risk_score": risk_score,
                 "employment_status": item.get('employment_status', 'Unknown'),
                 "occupation_category": item.get('occupation_category', 'none'),
                 "sector": item.get('sector', 'none'),
                 "housing_type": item.get('housing_type', 'pucca'),
-                "water_source": int(item.get('water_source', 0)),
-                "toilet_access": int(item.get('toilet_access', 0)),
-                "cooking_fuel": int(item.get('cooking_fuel', 0)),
-                "internet_access": int(item.get('internet_access', 0)),
-                "household_size": int(item.get('household_size', 1)),
+                "water_source": safe_int(item.get('water_source', 0)),
+                "toilet_access": safe_int(item.get('toilet_access', 0)),
+                "cooking_fuel": safe_int(item.get('cooking_fuel', 0)),
+                "internet_access": safe_int(item.get('internet_access', 0)),
+                "household_size": safe_int(item.get('household_size', 1), 1),
                 "parent_id": item.get('parent_id', ''),
                 "spouse_id": item.get('spouse_id', '')
             }
@@ -135,7 +151,7 @@ def load_demo_census_data():
             DEMO_DATA_BY_ID[record['record_id']] = record
         
         DEMO_CENSUS_DATA = records
-        logging.info(f"Loaded {len(records)} demo census records from output.json")
+        logging.info(f"Loaded {len(records)} demo census records from 4_7.json")
         return records
         
     except Exception as e:
@@ -765,10 +781,68 @@ async def get_analytics_summary(user: dict = Depends(get_current_user)):
     avg_welfare_score = round(total_welfare_score / total_records, 2) if total_records > 0 else 0
     scheme_leakage_rate = round((scheme_leakage_count / total_records) * 100, 2) if total_records > 0 else 0
     
-    # Data quality metrics (simulated based on data completeness)
-    completeness = 98.7  # High since demo data is complete
-    accuracy = 96.2
-    consistency = 99.1
+    # Data quality metrics (computed from actual data)
+    required_fields = ['record_id', 'household_id', 'name', 'age', 'sex', 'caste', 'income', 'state']
+    
+    # Completeness: % of records with all required fields non-null/non-empty
+    complete_records = 0
+    for r in records:
+        is_complete = all(
+            r.get(field) is not None and r.get(field) != '' and r.get(field) != 0
+            for field in required_fields
+        )
+        if is_complete:
+            complete_records += 1
+    completeness = round((complete_records / total_records) * 100, 1) if total_records > 0 else 0
+    
+    # Accuracy: % of records passing validation rules
+    accurate_records = 0
+    valid_states = {'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh', 
+                    'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jharkhand', 'Karnataka',
+                    'Kerala', 'Madhya Pradesh', 'Maharashtra', 'Manipur', 'Meghalaya', 'Mizoram',
+                    'Nagaland', 'Odisha', 'Punjab', 'Rajasthan', 'Sikkim', 'Tamil Nadu',
+                    'Telangana', 'Tripura', 'Uttar Pradesh', 'Uttarakhand', 'West Bengal',
+                    'Delhi', 'Jammu and Kashmir', 'Ladakh', 'Puducherry', 'Chandigarh',
+                    'Andaman and Nicobar Islands', 'Dadra and Nagar Haveli', 'Daman and Diu',
+                    'Lakshadweep', 'Unknown'}
+    valid_castes = {'General', 'OBC', 'SC', 'ST', 'EWS', 'Unknown'}
+    valid_sexes = {'Male', 'Female', 'Other'}
+    
+    for r in records:
+        age_valid = 0 <= r.get('age', -1) <= 120
+        income_valid = r.get('income', -1) >= 0
+        state_valid = r.get('state', '') in valid_states
+        caste_valid = r.get('caste', '') in valid_castes
+        sex_valid = r.get('sex', '') in valid_sexes
+        
+        if age_valid and income_valid and state_valid and caste_valid and sex_valid:
+            accurate_records += 1
+    accuracy = round((accurate_records / total_records) * 100, 1) if total_records > 0 else 0
+    
+    # Consistency: % of records without logical conflicts
+    consistent_records = 0
+    for r in records:
+        # Check for logical consistency
+        age = r.get('age', 0)
+        relation = r.get('relation', '')
+        household_size = r.get('household_size', 1)
+        income = r.get('income', 0)
+        employment = r.get('employment_status', '')
+        
+        # Rules:
+        # 1. Head of household should typically be adult (age >= 18)
+        # 2. Household size should be >= 1
+        # 3. If employed, income should typically be > 0
+        # 4. Children (age < 18) shouldn't be employed
+        
+        head_age_ok = not (relation == 'head' and age < 18)
+        household_size_ok = household_size >= 1
+        employment_income_ok = not (employment == 'employed' and income == 0)
+        child_employment_ok = not (age < 14 and employment == 'employed')
+        
+        if head_age_ok and household_size_ok and employment_income_ok and child_employment_ok:
+            consistent_records += 1
+    consistency = round((consistent_records / total_records) * 100, 1) if total_records > 0 else 0
     
     # Welfare indicators (computed from actual data patterns)
     # Count amenity access
@@ -989,8 +1063,9 @@ async def simulate_policy(
     simulation: PolicySimulation,
     user: dict = Depends(get_current_user)
 ):
-    if user["role"] != "policy_maker":
-        raise HTTPException(status_code=403, detail="Only policy makers can run simulations")
+    # Allow all authenticated users to run simulations for demo purposes
+    if user["role"] not in ["policy_maker", "state_analyst", "supervisor", "district_admin"]:
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
     
     records = list(in_memory_db["census_records"].values())
     
@@ -1102,9 +1177,98 @@ async def simulate_policy(
         "household_size_distribution": household_size_dist
     }
 
+@api_router.post("/policy/map-points")
+async def get_policy_map_points(
+    simulation: PolicySimulation,
+    user: dict = Depends(get_current_user)
+):
+    """
+    Returns lat/lng points with impact scores for map visualization.
+    Impact score indicates what % of population at that location is affected/eligible.
+    """
+    # Allow all authenticated users for demo purposes
+    if user["role"] not in ["policy_maker", "state_analyst", "supervisor", "district_admin"]:
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
+    
+    records = list(in_memory_db["census_records"].values())
+    
+    if not records:
+        records = generate_mock_census_data()
+    
+    # Filter records by simulation parameters
+    eligible = [r for r in records if r["income"] <= simulation.income_threshold]
+    
+    if simulation.caste_filter:
+        eligible = [r for r in eligible if r["caste"] == simulation.caste_filter]
+    if simulation.region_filter:
+        eligible = [r for r in eligible if r.get("state") == simulation.region_filter]
+    if simulation.sex_filter:
+        eligible = [r for r in eligible if r.get("sex") == simulation.sex_filter]
+    if simulation.occupation_filter:
+        eligible = [r for r in eligible if r.get("occupation_category") == simulation.occupation_filter]
+    if simulation.housing_type_filter:
+        eligible = [r for r in eligible if r.get("housing_type") == simulation.housing_type_filter]
+    if simulation.household_size_min:
+        eligible = [r for r in eligible if r.get("household_size", 1) >= simulation.household_size_min]
+    if simulation.household_size_max:
+        eligible = [r for r in eligible if r.get("household_size", 1) <= simulation.household_size_max]
+    
+    # Create a set of eligible record IDs for faster lookup
+    eligible_ids = set(r.get("record_id") for r in eligible)
+    
+    # Group by lat/lng (round to 2 decimals to cluster nearby points)
+    location_stats = {}
+    for record in records:
+        lat = record.get("latitude")
+        lng = record.get("longitude")
+        if lat and lng:
+            # Round to create clusters
+            lat_key = round(float(lat), 2)
+            lng_key = round(float(lng), 2)
+            key = f"{lat_key},{lng_key}"
+            
+            if key not in location_stats:
+                location_stats[key] = {
+                    "latitude": lat_key,
+                    "longitude": lng_key,
+                    "state": record.get("state", "Unknown"),
+                    "total_count": 0,
+                    "eligible_count": 0,
+                    "income_sum": 0
+                }
+            location_stats[key]["total_count"] += 1
+            location_stats[key]["income_sum"] += record.get("income", 0)
+            
+            # Check if this record is eligible (using ID for faster lookup)
+            if record.get("record_id") in eligible_ids:
+                location_stats[key]["eligible_count"] += 1
+    
+    # Calculate impact scores and format for frontend
+    map_points = []
+    for key, stats in location_stats.items():
+        if stats["total_count"] > 0:
+            impact_score = stats["eligible_count"] / stats["total_count"]
+            avg_income = stats["income_sum"] / stats["total_count"]
+            map_points.append({
+                "latitude": str(stats["latitude"]),
+                "longitude": str(stats["longitude"]),
+                "state": stats["state"],
+                "count": stats["total_count"],
+                "eligible_count": stats["eligible_count"],
+                "impact_score": round(impact_score, 3),
+                "avg_income": round(avg_income)
+            })
+    
+    # Sort by impact score descending (most affected first)
+    map_points.sort(key=lambda x: x["impact_score"], reverse=True)
+    
+    # Limit to top 500 points to avoid overwhelming the map
+    return {"points": map_points[:500]}
+
 @api_router.get("/audit/logs")
 async def get_audit_logs(user: dict = Depends(get_current_user)):
-    if user["role"] not in ["state_analyst", "district_admin"]:
+    # Allow all authenticated users to view audit logs for demo
+    if user["role"] not in ["state_analyst", "district_admin", "supervisor", "policy_maker"]:
         raise HTTPException(status_code=403, detail="Insufficient permissions")
     
     logs = in_memory_db["audit_logs"]

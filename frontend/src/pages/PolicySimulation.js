@@ -8,8 +8,8 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 import { Play, AlertCircle, TrendingUp, Users, Wallet, Target, ShieldCheck, Home, Briefcase, Map } from 'lucide-react';
 import { toast } from 'sonner';
 import axios from 'axios';
-import PolicySimulationMap from '../components/PolicySimulationMap';
-import PincodePointsMap from '../components/PincodePointsMap';
+import PolicyImpactMap from '../components/PolicyImpactMap';
+import InteractiveIndiaMap from '../components/InteractiveIndiaMap';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -26,7 +26,6 @@ function PolicySimulation() {
     const [householdSizeMax, setHouseholdSizeMax] = useState([10]);
     const [loading, setLoading] = useState(false);
     const [results, setResults] = useState(null);
-    const [mapView, setMapView] = useState('state'); // 'state' or 'pincode'
 
     const runSimulation = async () => {
         setLoading(true);
@@ -313,64 +312,47 @@ function PolicySimulation() {
                                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3">
                                     <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
                                         <Map className="h-4 w-4 text-orange-600" />
-                                        Geographic Distribution
+                                        Policy Impact Map - Individual Markers
                                     </h3>
-                                    <div className="flex items-center gap-2 mt-2 sm:mt-0">
-                                        <div className="flex bg-white rounded-md border border-gray-200 p-1">
-                                            <button
-                                                onClick={() => setMapView('state')}
-                                                className={`px-3 py-1 text-xs font-medium rounded transition-colors ${mapView === 'state'
-                                                    ? 'bg-orange-100 text-orange-700'
-                                                    : 'text-gray-600 hover:bg-gray-50'
-                                                    }`}
-                                            >
-                                                State Heatmap
-                                            </button>
-                                            <button
-                                                onClick={() => setMapView('pincode')}
-                                                className={`px-3 py-1 text-xs font-medium rounded transition-colors ${mapView === 'pincode'
-                                                    ? 'bg-orange-100 text-orange-700'
-                                                    : 'text-gray-600 hover:bg-gray-50'
-                                                    }`}
-                                            >
-                                                Pincode Density
-                                            </button>
-                                        </div>
+                                    <div className="text-xs text-gray-600">
+                                        {results ? 'Markers colored: Green (not affected) → Red (affected by policy)' : 'Run simulation to see impact coloring'}
+                                    </div>
+                                </div>
+
+                                <div className="min-h-[450px]">
+                                    <PolicyImpactMap
+                                        incomeThreshold={incomeThreshold[0]}
+                                        casteFilter={casteFilter}
+                                        sexFilter={sexFilter}
+                                        occupationFilter={occupationFilter}
+                                        housingTypeFilter={housingTypeFilter}
+                                        householdSizeMin={householdSizeMin[0]}
+                                        householdSizeMax={householdSizeMax[0]}
+                                        regionFilter={regionFilter}
+                                        simulationRun={results !== null}
+                                    />
+                                </div>
+                            </div>
+
+                            {/* State-wise Choropleth Map */}
+                            <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg p-4 border border-green-100">
+                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3">
+                                    <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                                        <Map className="h-4 w-4 text-green-600" />
+                                        State-wise Distribution Map
+                                    </h3>
+                                    <div className="text-xs text-gray-600">
+                                        States colored by eligible population density
                                     </div>
                                 </div>
 
                                 <div className="min-h-[400px]">
-                                    {mapView === 'state' ? (
-                                        <PolicySimulationMap
-                                            stateFilter={regionFilter}
-                                            simulationData={results}
-                                            colorMetric="eligible"
-                                            onStateClick={(stateName) => {
-                                                setRegionFilter(stateName);
-                                                toast.info(`Filtered to ${stateName}. Click "Run Simulation" to update.`);
-                                            }}
-                                        />
-                                    ) : (
-                                        <div className="relative">
-                                            <PincodePointsMap
-                                                stateFilter={regionFilter}
-                                                colorMetric="eligible"
-                                                incomeThreshold={incomeThreshold[0]}
-                                                casteFilter={casteFilter}
-                                                sexFilter={sexFilter}
-                                                occupationFilter={occupationFilter}
-                                                housingTypeFilter={housingTypeFilter}
-                                                householdSizeMin={householdSizeMin[0]}
-                                                householdSizeMax={householdSizeMax[0]}
-                                                onPointClick={(point) => {
-                                                    toast.info(`Pincode ${point.pincode}: ${point.eligible_pct}% eligible under current criteria`);
-                                                }}
-                                            />
-                                            <div className="mt-2 text-xs text-center text-gray-500 bg-white/50 p-1 rounded">
-                                                Dots show pockets of population eligible under ALL current filters (Income, Caste, Occupation, etc.)
-                                            </div>
-                                        </div>
-                                    )}
+                                    <InteractiveIndiaMap 
+                                        metric="total_population"
+                                        onStateClick={(stateName, data) => {
+                                            toast.info(`${stateName}: ${data.total_population?.toLocaleString()} people`);
+                                        }}
+                                    />
                                 </div>
                             </div>
 
